@@ -1,0 +1,65 @@
+[
+  {
+    "category": "op2com01",
+    "items": [
+      { "name": "CPU", "value": 30 },
+      { "name": "MEM", "value": 20 },
+      { "name": "DISK", "value": 10 },
+      { "name": "GPU", "value": 5 }
+    ]
+  },
+  {
+    "category": "op2com02",
+    "items": [
+      { "name": "CPU", "value": 80 },
+      { "name": "MEM", "value": 40 },
+      { "name": "DISK", "value": 20 },
+      { "name": "GPU", "value": 10 }
+    ]
+  },
+  {
+    "category": "op2com03",
+    "items": [
+      { "name": "CPU", "value": 45 },
+      { "name": "MEM", "value": 35 },
+      { "name": "DISK", "value": 15 },
+      { "name": "GPU", "value": 5 }
+    ]
+  },
+  {
+    "category": "op2com04",
+    "items": [
+      { "name": "CPU", "value": 60 },
+      { "name": "MEM", "value": 50 },
+      { "name": "DISK", "value": 30 },
+      { "name": "GPU", "value": 15 }
+    ]
+  },
+  {
+    "category": "op2com05",
+    "items": [
+      { "name": "CPU", "value": 20 },
+      { "name": "MEM", "value": 10 },
+      { "name": "DISK", "value": 5 },
+      { "name": "GPU", "value": 2 }
+    ]
+  },
+  {
+    "category": "op2com06",
+    "items": [
+      { "name": "CPU", "value": 90 },
+      { "name": "MEM", "value": 70 },
+      { "name": "DISK", "value": 50 },
+      { "name": "GPU", "value": 30 }
+    ]
+  },
+  {
+    "category": "op2com07",
+    "items": [
+      { "name": "CPU", "value": 55 },
+      { "name": "MEM", "value": 45 },
+      { "name": "DISK", "value": 25 },
+      { "name": "GPU", "value": 17 }
+    ]
+  }
+]
