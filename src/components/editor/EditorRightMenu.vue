@@ -23,6 +23,13 @@
         <div class="property-title">속성</div>
         <button class="reset-btn">수치 초기화</button>
       </div>
+
+      <div class="divider"></div>
+
+      <div class="property-section">
+        <div class="property-title">성능</div>
+        <button class="reset-btn" @click="clearConsole">콘솔 클리어</button>
+      </div>
   
       <div class="divider"></div>
   
@@ -35,42 +42,54 @@
         <!-- Size Section -->
         <div class="property-group">
           <div @click="toggleCollapse('size')" class="section-header">
-            <p>크기(Scale)</p>
+            <span>
+              <img class="object-icons" width=22 src="@/assets/image/editor/icon_scale.png" style="margin-right: 5px">
+              크기(Scale)
+            </span>
             <span :class="{ 'arrow-rotated': !collapsed.size }" class="arrow">▼</span>
           </div>
 
           <div v-bind:class="{'section-content': true, 'expanded': !collapsed.size}">
             <div class="input-group">
               <span>가로(Width)</span>
-              <input type="number" class="input-field" :value="localEditorObject.scale.x" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('scale', 'x', $event.target.value)" />
+              <input type="number" class="input-field" :value="localEditorObject.scale.x" :min="0" :max="maxWidth" @input="sendEditorObjectUpdate('scale', 'x', $event.target.value)" />
             </div>
             <div class="range-group">
-              <input type="range" :value="localEditorObject.scale.x" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('scale', 'x', $event.target.value)" style="width: 100%" step="0.1" />
+              <input type="range" 
+                @mousedown="emitScrollStart"
+                @mouseup="emitScrollEnd"  :value="localEditorObject.scale.x" :min="0" :max="maxWidth" @input="sendEditorObjectUpdate('scale', 'x', $event.target.value)" style="width: 100%" step="0.1" />
             </div>
   
             <div class="input-group">
               <span>세로(Height)</span>
-              <input type="number" class="input-field" :value="localEditorObject.scale.y" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('scale', 'y', $event.target.value)" />
+              <input type="number" class="input-field" :value="localEditorObject.scale.y" :min="0" :max="maxWidth" @input="sendEditorObjectUpdate('scale', 'y', $event.target.value)" />
             </div>
             <div class="range-group">
-              <input type="range" :value="localEditorObject.scale.y" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('scale', 'y', $event.target.value)" style="width: 100%" step="0.1" />
+              <input type="range" 
+                @mousedown="emitScrollStart"
+                @mouseup="emitScrollEnd"  :value="localEditorObject.scale.y" :min="0" :max="maxWidth" @input="sendEditorObjectUpdate('scale', 'y', $event.target.value)" style="width: 100%" step="0.1" />
             </div>
   
             <div class="input-group">
               <span>깊이(Depth)</span>
-              <input type="number" class="input-field" :value="localEditorObject.scale.z" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('scale', 'z', $event.target.value)" />
+              <input type="number" class="input-field" :value="localEditorObject.scale.z" :min="0" :max="maxWidth" @input="sendEditorObjectUpdate('scale', 'z', $event.target.value)" />
             </div>
             <div class="range-group">
-              <input type="range" :value="localEditorObject.scale.z" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('scale', 'z', $event.target.value)" style="width: 100%" step="0.1" />
+              <input type="range" 
+                @mousedown="emitScrollStart"
+                @mouseup="emitScrollEnd"  :value="localEditorObject.scale.z" :min="0" :max="maxWidth" @input="sendEditorObjectUpdate('scale', 'z', $event.target.value)" style="width: 100%" step="0.1" />
             </div>
           </div>
         </div>
-  
         <!-- Position Section -->
         <div class="property-group">
           <div @click="toggleCollapse('position')" class="section-header">
-            <p>위치(Position)</p>
+            <span>
+            <img class="object-icons" width=22 src="@/assets/image/editor/icon_move.png" style="margin-right: 5px">
+              위치(Position)
+            </span>
             <span :class="{ 'arrow-rotated': !collapsed.position }" class="arrow">▼</span>
+
           </div>
         
           <div v-bind:class="{'section-content': true, 'expanded': !collapsed.position}">
@@ -81,7 +100,9 @@
               <input type="number" class="input-field" :value="localEditorObject.position.x" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('position', 'x', $event.target.value)" />
             </div>
             <div class="range-group">
-              <input type="range" :value="localEditorObject.position.x" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('position', 'x', $event.target.value)" style="width: 100%" step="0.1" />
+              <input type="range"
+                @mousedown="emitScrollStart"
+                @mouseup="emitScrollEnd"  :value="localEditorObject.position.x" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('position', 'x', $event.target.value)" style="width: 100%" step="0.1" />
             </div>
   
             <div class="input-group">
@@ -89,7 +110,9 @@
               <input type="number" class="input-field" :value="localEditorObject.position.y" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('position', 'y', $event.target.value)" />
             </div>
             <div class="range-group">
-              <input type="range" :value="localEditorObject.position.y" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('position', 'y', $event.target.value)" style="width: 100%" step="0.1" />
+              <input type="range" 
+                @mousedown="emitScrollStart"
+                @mouseup="emitScrollEnd"  :value="localEditorObject.position.y" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('position', 'y', $event.target.value)" style="width: 100%" step="0.1" />
             </div>
   
             <div class="input-group">
@@ -97,7 +120,16 @@
               <input type="number" class="input-field" :value="localEditorObject.position.z" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('position', 'z', $event.target.value)" />
             </div>
             <div class="range-group">
-              <input type="range" :value="localEditorObject.position.z" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('position', 'z', $event.target.value)" style="width: 100%" step="0.1" />
+              <input type="range" 
+                @mousedown="emitScrollStart"
+                @mouseup="emitScrollEnd" 
+                :value="localEditorObject.position.z" 
+                :min="minWidth" 
+                :max="maxWidth" 
+                @input="sendEditorObjectUpdate('position', 'z', $event.target.value)" 
+                style="width: 100%" 
+                step="0.1" 
+              />
             </div>
           </div>
         </div>
@@ -105,7 +137,10 @@
         <!-- Rotation Section -->
         <div class="property-group">
             <div @click="toggleCollapse('rotation')" class="section-header" data-section="rotation">
-                <p>회전(Rotation)</p>
+                <span>
+                  <img class="object-icons" width=22 src="@/assets/image/editor/icon_rotate.png" style="margin-right: 5px">
+                  회전(Rotation)
+                </span>
                 <span :class="{ 'arrow-rotated': !collapsed.rotation }" class="arrow">▼</span>
             </div>
             <div v-bind:class="{'section-content': true, 'expanded': !collapsed.rotation}">
@@ -114,7 +149,9 @@
                     <input type="number" class="input-field" :value="localEditorObject.rotation.x" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('rotation', 'x', $event.target.value)" />
                 </div>
                     <div class="range-group">
-                    <input type="range" :value="localEditorObject.rotation.x" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('rotation', 'x', $event.target.value)" style="width: 100%" step="0.1" />
+                    <input type="range" 
+                @mousedown="emitScrollStart"
+                @mouseup="emitScrollEnd"  :value="localEditorObject.rotation.x" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('rotation', 'x', $event.target.value)" style="width: 100%" step="0.1" />
                 </div>
 
                 <div class="input-group">
@@ -122,7 +159,9 @@
                     <input type="number" class="input-field" :value="localEditorObject.rotation.y" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('rotation', 'y', $event.target.value)" />
                 </div>
                 <div class="range-group">
-                    <input type="range" :value="localEditorObject.rotation.y" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('rotation', 'y', $event.target.value)" style="width: 100%" step="0.1" />
+                    <input type="range" 
+                @mousedown="emitScrollStart"
+                @mouseup="emitScrollEnd"  :value="localEditorObject.rotation.y" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('rotation', 'y', $event.target.value)" style="width: 100%" step="0.1" />
                 </div>
 
                 <div class="input-group">
@@ -130,7 +169,51 @@
                     <input type="number" class="input-field" :value="localEditorObject.rotation.z" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('rotation', 'z', $event.target.value)" />
                 </div>
                 <div class="range-group">
-                    <input type="range" :value="localEditorObject.rotation.z" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('rotation', 'z', $event.target.value)" style="width: 100%" step="0.1" />
+                    <input type="range" 
+                @mousedown="emitScrollStart"
+                @mouseup="emitScrollEnd"  :value="localEditorObject.rotation.z" :min="minWidth" :max="maxWidth" @input="sendEditorObjectUpdate('rotation', 'z', $event.target.value)" style="width: 100%" step="0.1" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Rotation Section -->
+        <div v-if="editMarkerTabYn" class="property-group">
+            <div @click="toggleCollapse('marker')" class="section-header" data-section="marker">
+                <span>
+                  <img class="object-icons" width=22 src="@/assets/image/editor/icon_rotate.png" style="margin-right: 5px">
+                  마커 설정
+                </span>
+                <span :class="{ 'arrow-rotated': !collapsed.marker }" class="arrow">▼</span>
+            </div>
+            <div v-bind:class="{'section-content': true, 'expanded': !collapsed.marker}">
+                <div class="input-group">
+                    <span>사이즈(Size)</span>
+                    <input type="number" class="input-field" :value="localEditorObject.marker.size" :min="0" :max="maxWidth" @input="sendEditorObjectUpdate('marker', 'size', $event.target.value)" />
+                </div>
+                    <div class="range-group">
+                    <input type="range" 
+                      @mousedown="emitScrollStart"
+                      @mouseup="emitScrollEnd"  :value="localEditorObject.marker.size" :min="0" :max="maxWidth" @input="sendEditorObjectUpdate('marker', 'size', $event.target.value)" style="width: 100%" step="0.1" />
+                </div>
+
+                <div class="input-group">
+                    <span>깊이(Depth)</span>
+                    <input type="number" class="input-field" :value="localEditorObject.marker.depth" :min="0" :max="maxWidth" @input="sendEditorObjectUpdate('marker', 'depth', $event.target.value)" />
+                </div>
+                <div class="range-group">
+                    <input type="range" 
+                    @mousedown="emitScrollStart"
+                    @mouseup="emitScrollEnd"  :value="localEditorObject.marker.depth" :min="0" :max="maxWidth" @input="sendEditorObjectUpdate('marker', 'depth', $event.target.value)" style="width: 100%" step="0.1" />
+                </div>
+
+                <div class="input-group">
+                    <span>curveSegments</span>
+                    <input type="number" class="input-field" :value="localEditorObject.marker.curveSegments" :min="0" :max="maxWidth" @input="sendEditorObjectUpdate('marker', 'curveSegments', $event.target.value)" />
+                </div>
+                <div class="range-group">
+                    <input type="range" 
+                    @mousedown="emitScrollStart"
+                    @mouseup="emitScrollEnd"  :value="localEditorObject.marker.curveSegments" :min="0" :max="maxWidth" @input="sendEditorObjectUpdate('marker', 'curveSegments', $event.target.value)" style="width: 100%" step="0.1" />
                 </div>
             </div>
         </div>
@@ -147,11 +230,14 @@
   export default {
     props: {
       editSiderYn: Boolean,
+      editMarkerTabYn: Boolean,
       editorObject: {
         type: Object,
         required: true
       },
-      toggleEditorRightMenu: Function
+      toggleEditorRightMenu: Function,
+      handleScrollStart: Function,
+      handleScrollEnd: Function,
     },
     data() {
       return {
@@ -162,7 +248,8 @@
         collapsed: {
           size: false,
           position: false,
-          rotation: false
+          rotation: false,
+          marker: false,
         }
       };
     },
@@ -186,6 +273,12 @@
                 updatedEditorObject[group].x = value;
                 updatedEditorObject[group].y = value;
                 updatedEditorObject[group].z = value;
+            } else if (group === 'marker') { 
+                this.$emit('update-marker', { axis, value });
+
+                
+
+                this.selectedMarkerObject.geometry.parameters.options[axis] = value; 
             } else {
                 // 비율을 유지하지 않는 경우에는 해당 축의 값만 업데이트
                 updatedEditorObject[group][axis] = value;
@@ -199,7 +292,7 @@
             this.collapsed[section] = !this.collapsed[section];
 
             // 특정 섹션에서 화살표 회전 상태 변경
-            if (section === 'size' || section === 'position' || section === 'rotation') {
+            if (section === 'size' || section === 'position' || section === 'rotation' || section === 'marker') {
                 this.$nextTick(() => {
                     const arrow = document.querySelector(`.section-header[data-section="${section}"] .arrow`);
                     if (arrow) {
@@ -220,6 +313,16 @@
                 }
             });
         },
+        emitScrollStart() {
+          this.$emit('scrollStart');
+        },
+        emitScrollEnd() {
+          this.$emit('scrollEnd');
+        },
+        clearConsole() {
+          console.log("콘솔 초기화")
+          console.clear();
+        }
 
     },
     
@@ -228,20 +331,25 @@
   </script>
   
   <style scoped>
+
+.object-icons {
+  filter: invert(1) brightness(10); /* 색상 반전 및 밝기 증가 */
+}
+
 .editor-sidebar {
-position: fixed;
-top: 68px;
-right: 0;
-width: 300px; /* Reduced width */
-height: 100%;
-background-color: #2c2c2c;
-border-left: 2px solid #444;
-box-shadow: -4px 0 10px rgba(0, 0, 0, 0.5);
-color: #fff;
-padding: 8px; /* Reduced padding */
-display: flex;
-flex-direction: column;
-font-family: 'Arial', sans-serif;
+  position: fixed;
+  top: 68px;
+  right: 0;
+  width: 300px; /* Reduced width */
+  height: 100%;
+  background-color: #4d4d4f;
+  border-left: 2px solid #444;
+  box-shadow: -4px 0 10px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  padding: 8px; /* Reduced padding */
+  display: flex;
+  flex-direction: column;
+  font-family: 'Arial', sans-serif;
 }
 
 .editor-header {
@@ -324,6 +432,7 @@ font-family: 'Arial', sans-serif;
     padding: 2px 10px; /* Adjusted padding */
     font-size: 0.9em; /* Reduced font size */
     font-weight: bold;
+    margin-bottom: 5px;
 }
 
 .reset-btn {
@@ -370,6 +479,7 @@ font-family: 'Arial', sans-serif;
     color: #fff;
     border: 1px solid #666;
     border-radius: 5px;
+    width: 100px;
 }
 
 input[type="range"] {
@@ -409,7 +519,13 @@ input[type="range"]:focus {
     align-items: center;
     padding: 8px;
     height: 40px;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
+}
+
+.section-header:hover {
+    background-color: #4d4d4d;
+    box-shadow: -4px 0 10px rgba(0, 0, 0, 0.5);
+
 }
 
 .section-header p {

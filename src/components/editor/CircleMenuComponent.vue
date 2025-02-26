@@ -140,7 +140,6 @@ export default {
       this.$emit('menuItemClicked', item);
     },
     showTooltip(item) {
-      console.log(item);
       this.activeTooltip = item; // 해당 항목의 툴팁 표시
     },
     hideTooltip() {
@@ -162,9 +161,9 @@ export default {
     }
   },
   mounted() {
-    console.log('Menu X:', this.menuX);
-    console.log('Menu Y:', this.menuY);
-    console.log('Menu Visible:', this.menuVisible);
+    // console.log('Menu X:', this.menuX);
+    // console.log('Menu Y:', this.menuY);
+    // console.log('Menu Visible:', this.menuVisible);
   },
   updated() {
   }

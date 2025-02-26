@@ -1,7 +1,7 @@
 <template>
     <div class="detail-container">
-        <div style="font-weight: bold; color: #fff; margin: 4px 0 4px 10px; font-size: 1.2em; text-align: left">Detail</div>
-        <div style="display:flex; justify-content: space-between; align-items: center;">
+        <div style="font-weight: bold; color: #fff; margin: 4px 0 4px 10px; font-size: 1em; text-align: center">2Depth</div>
+        <div style="display:flex; justify-content: center; align-items: center;">
             <nav aria-label="breadcrumb" >
                 <ol class="breadcrumb">
                     <li><a href="#">Home</a></li>
@@ -13,12 +13,12 @@
             </nav>
 
             <div style="color: #fff; font-weight: bold; display: flex;">
-                <div style="
+                <!-- <div style="
                     background: linear-gradient(135deg, #286bf2, #1e5ab6); 
                     color: white; 
-                    padding: 8px 20px; 
+                    padding: 4px 10px; 
                     border-radius: 8px; 
-                    font-size: 16px; 
+                    font-size: 0.9em; 
                     font-weight: bold; 
                     text-align: center; 
                     cursor: pointer; 
@@ -29,9 +29,9 @@
                 <div style="
                     background: linear-gradient(135deg, #286bf2, #1e5ab6); 
                     color: white; 
-                    padding: 8px 20px; 
+                    padding: 4px 10px; 
                     border-radius: 8px; 
-                    font-size: 16px; 
+                    font-size: 0.9em; 
                     font-weight: bold; 
                     text-align: center; 
                     cursor: pointer; 
@@ -40,10 +40,9 @@
                     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
                     transition: transform 0.2s ease, box-shadow 0.2s ease;">
                     관리
-                </div>
+                </div> -->
             </div>
         </div>
-        
     </div>
     <!-- <div class="tab">
         <div class="tab-item">Total: 12</div>
@@ -53,7 +52,7 @@
 
 
     <div>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; padding: 10px;" v-if="itemId === 1">
+        <div class="detail-component" v-if="itemId === 1">
             <div class="hover-card">
                 <span class="card-text">서버1</span> 
                 <img class="card-image" src="@/assets/image/editor/server1.png" alt="의자/테이블 이미지"/>
@@ -75,7 +74,7 @@
             </div>
         </div>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; padding: 10px;" v-else-if="itemId === 2">
+        <div class="detail-component" v-else-if="itemId === 2">
             <div class="hover-card">
                 <span class="card-text">스토리지1</span> 
                 <img class="card-image" src="@/assets/image/editor/storage1.png" alt="의자/테이블 이미지"/>
@@ -97,7 +96,7 @@
             </div>
         </div>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; padding: 5px; overflow-y: scroll; max-height: 584px;" v-else-if="itemId === 3">
+        <div class="detail-component" v-else-if="itemId === 3">
             <div class="hover-card">
                 <span class="card-text">의자1</span> 
                 <img 
@@ -187,7 +186,7 @@
             </div>
         </div>
         
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; padding: 10px;" v-else-if="itemId === 4">
+        <div class="detail-component" v-else-if="itemId === 4">
             <div class="hover-card" >
                 <span class="card-text">ETC1</span> 
                 <img class="card-image" src="@/assets/image/editor/etc1.png" alt="의자/테이블 이미지"/>
@@ -203,13 +202,7 @@
                 <img class="card-image" src="@/assets/image/editor/etc3.png" alt="의자/테이블 이미지"/>
             </div>
         </div>
-
-        <!-- divider -->
-        <div style="width:100%; border: 1px solid #828387; margin: 4px 0 4px 0;"></div>
     </div>
-    
-
-
   </template>
   
   <script>
@@ -293,6 +286,7 @@
 }
 .breadcrumb {
     display: flex;
+    align-items: center;
     list-style: none;
     padding: 0;
     margin-left: 10px;
@@ -308,17 +302,19 @@
 .breadcrumb a {
     text-decoration: none;
     color: #286Bf2;
+    font-size:0.9em
 }
 
 .breadcrumb .active {
     color: #fff;
     font-weight: bold;
+    font-size:0.9em
 }
 
 .hover-card {
   background-color: #f5f5f5;
-  width: 150px;
-  height: 150px;
+  width: 120px;
+  height: 120px;
   border-radius: 15px;
   display: flex;
   flex-direction: column;
@@ -340,14 +336,14 @@
 }
 
 .card-text {
+  margin-top: 5px;
   color: #333;
   font-size: 14px;
   font-weight: bold;
-  margin-bottom: 10px;
 }
 
 .card-image {
-  width: 100px;
+  width: 90px;
   height: auto;
   transition: transform 0.3s ease; /* 이미지 크기 변화에 대한 부드러운 전환 효과 */
 }
@@ -355,6 +351,36 @@
 .hover-card:hover .card-image {
   
   transform: scale(1.1); /* hover-card에 마우스를 올렸을 때 이미지 크기 10% 확대 */
+}
+
+.divider {
+    width: 100%;
+    border: 1px solid #555;
+    margin: 6px 0; /* Reduced margin */
+}
+
+.detail-component {
+    display: flex; 
+    justify-content: center;
+    flex-wrap: wrap; 
+    gap: 10px; 
+    padding: 5px;
+    overflow-y: auto; /* 스크롤 활성화 */
+    max-height: 400px; /* 기본적으로 400px까지 제한 */
+}
+
+/* 해상도에 따라 높이를 다르게 설정 */
+@media screen and (min-width: 1920px) {
+    .detail-component {
+        max-height: 700px; /* UHD 화면에 맞는 높이 설정 */
+    }
+}
+
+@media screen and (max-width: 1920px) {
+    .detail-component {
+        
+        max-height: 350px; /* FHD 화면에 맞는 높이 설정 */
+    }
 }
 
 </style>

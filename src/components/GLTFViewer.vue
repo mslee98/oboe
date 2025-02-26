@@ -77,29 +77,17 @@
       </div>
 
       <!-- mslee editor example -->
-      <div v-if="state.showInsertView" class="insert-container" v-stop-propagation>
-        <div style="position: relative; z-index: 500;">
-
-          <!-- Sidebar -->
-          <div class="sidebar" style="width: 340px; height: 1280px; background-color: #444445; position: absolute; top: 68px; left: 67px; border: 1px solid #828387;">
-            
-            <!-- Close Button (우측 상단에 배치) -->
-            <div class="close-btn" @click="state.showInsertView = !state.showInsertView" style="position: absolute; top: 10px; right: 10px; background-color: #444445; padding: 10px; cursor: pointer; width: 40px; height: 40px;">
-              <button style="background-color: transparent; border: none; color: #fff; font-size: 16px; font-weight: bold; width: 100%; height: 100%; cursor:pointer">X</button>
-            </div>
-
-            <div style="padding: 20px; color: #fff;">
-              <p style="font-size: 2em; font-weight: bold;">객체 삽입</p>
-              
-            </div>
-
-            <!-- divider -->
-            <div style="width:100%; border: 1px solid #828387"></div>
-
-            <!-- Content-->
-            <EditorComponent/>
+      <div v-if="state.showInsertView" class="insert-sidebar" v-stop-propagation>
+        <!-- Close Button (우측 상단에 배치) -->
+          <div class="insert-header">
+          <span class="insert-title">Insert Tool</span>
+            <button @click="state.showInsertView = !state.showInsertView" class="insert-close-btn">닫기</button>
           </div>
-        </div>
+
+          <div class="divider"></div>
+
+        <!-- Content-->
+        <EditorComponent/>
       </div>
 
       <!-- Circle Menu -->
@@ -160,7 +148,13 @@
       <!-- dat gui custom -->
       <EditorRightMenu
         :editSiderYn="editSiderYn"
+        :menuVisible="menuVisible"
+        :editMarkerTabYn="editMarkerTabYn"
         v-model:editorObject="editorObject"
+
+        @scrollStart="handleScrollStart"
+        @scrollEnd="handleScrollEnd"
+        
         @toggleEditorRightMenu="toggleEditorRightMenu"
         @sendEditorObjectUpdate="handleEditorObjectUpdate"
       />
@@ -290,6 +284,13 @@ import * as dat from 'dat.gui';
 import CircleMenuComponent from './editor/CircleMenuComponent';
 import { Easing, Group, Tween } from "@tweenjs/tween.js";
 import EditorRightMenu from "./editor/EditorRightMenu.vue";
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
+// import { TextureUtils } from "three";
+
+// import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
+// import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+// import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass';
+
 
 // import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper';
 
@@ -353,13 +354,28 @@ export default {
 
       viewHelper: null,
 
+      saveParams: {
+        trs: false,
+        onlyVisible: true,
+				binary: false,
+				maxTextureSize: 4096
+      },
+
+      editMarkerTabYn: false,
 
       editorObject: {
         position: { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 0, y: 0, z: 0 },
         name: 'Object Name',
-        imgPath: ''
+        imgPath: '',
+        marker: {
+          font: '',
+          size: 0,
+          depth: 0,
+          curveSegments: 0,
+          bevelEnabled: false,
+        }
       },
 
       /**
@@ -799,6 +815,7 @@ export default {
 
       // 씬, 카메라, 렌더러 생성
       const scene = new THREE.Scene();
+
       this.cameraPer = new THREE.PerspectiveCamera(
         this.fov.curr,
         this.$refs.rendererContainer.clientWidth /
@@ -810,13 +827,25 @@ export default {
       const renderer = new THREE.WebGLRenderer({ antialias: true });
 
       this.renderer = renderer; //mslee
-      
+      this.renderer.toneMappingExposure = 1.0;
+  
       renderer.setSize(
         this.$refs.rendererContainer.clientWidth,
         this.$refs.rendererContainer.clientHeight
       );
+
       renderer.setPixelRatio(window.devicePixelRatio);
       this.$refs.rendererContainer.appendChild(renderer.domElement);
+
+
+      // 후처리 관련 설정
+      // const composer = new EffectComposer(renderer);
+      // this.composer = composer;
+
+      // const renderPass = new RenderPass(scene, this.cameraPer);
+      // composer.addPass(renderPass);
+
+      
 
       // 궤도 컨트롤을 사용하면 카메라가 대상 주위를 공전을 하기 위해서 사용
       const controls = new OrbitControls(this.cameraPer, renderer.domElement);
@@ -856,6 +885,7 @@ export default {
       scene.add(this.dirLight);
       */
 
+
       // Grid 추가
       this.gridHelper = new THREE.GridHelper(10, 10);
       this.gridHelper.visible = this.state.showGrid; // 초기에는 Grid가 보이지 않음
@@ -880,31 +910,28 @@ export default {
 
       this.state.prevCamPos = this.camera.position.clone();
 
+
       // 공통 사용을 위해 밖으로 뺌
       this.gtlfLoader = new GLTFLoader();
 
-      this.transformControls = new TransformControls(this.camera, renderer.domElement);
-      scene.add(this.transformControls);
+      this.gltfExporter = new GLTFExporter();
 
-      // this.viewHelper = new ViewHelper(this.camera);
-      // scene.add(this.viewHelper)
+      this.transformControls = new TransformControls(this.camera, renderer.domElement);
+      this.transformControls.setSpace('local');
+      scene.add(this.transformControls);
 
       const animate = () => {
         requestAnimationFrame(animate);
-        // renderer.clearDepth();
+
         // 만약 controls.enableDamping, controls.autoRotate 둘 중 하나라도 true로 설정될 경우 필수로 호출되어야 함
         controls.update();
 
-        // Tween.update();
         if(this.tweenGroup) {
           this.tweenGroup.update();
         }
 
 
-        renderer.render(scene, this.camera); 
-
-        // this.viewHelper.render(renderer);
-
+        renderer.render(scene, this.camera);
 
         // 로드된 마커 및 텍스트 오브젝트를 카메라 기준으로 회전
         if( this.markObjects ) {
@@ -1001,6 +1028,7 @@ export default {
         }
 
         if(this.selectedObject) {
+
           const collidingObject = this.checkCollision(this.selectedObject, this.activeObjects);
 
           if (collidingObject) {
@@ -1015,6 +1043,25 @@ export default {
 
       /**
        * @author mslee
+       * @event TransformControls => change
+       *  
+       * @description 커스텀 GUI 연동을 위한 함수로, 트랜스폼 컨트롤즈는 쿼터니언 속성을 사용하기에 변환
+       */
+      this.transformControls.addEventListener('change', () => {
+
+        if(this.selectedObject) {
+          this.selectedObject.rotation.setFromQuaternion(this.selectedObject.quaternion);
+
+          if(this.selectedMarkerObject) {
+            this.selectedMarkerObject.position.x = this.selectedObject.position.x;
+            this.selectedMarkerObject.position.z = this.selectedObject.position.z;
+          }
+
+        }
+      })
+
+      /**
+       * @author mslee
        * @event TransformControls => dragging-changed
        * 
        * @description transformCOntrols start / end 이후 발생되는 이벤트
@@ -1023,6 +1070,7 @@ export default {
       this.transformControls.addEventListener('dragging-changed', (event) => {
           // 드래깅 중일 때 버튼을 숨깁니다.
           if (event.value) {
+
               this.isDragging = true;
               this.menuVisible = false;
           } else {
@@ -1087,7 +1135,7 @@ export default {
 
           this.activeObjects.push(this.selObject);
 
-          this.selectObjectControl()
+          this.selectObjectControl(object)
 
           // const { x, y } = this.getScreenPosition(this.selectedObject);
 
@@ -1301,29 +1349,10 @@ export default {
     }
   }, 
 
-
-
-
-  /**
-   * 이거를 객체랑 마커랑 구별은 해놓았는데 공통적으로 문제가 생기는 부분들을 찾아봐야 함;;;
-   * 좀 많은걸?
-   */
-  selectMarkerObjectControl() {
-    if(!(this.selectedMarkerObject instanceof THREE.Mesh || this.selectedMarkerObject instanceof THREE.Object3D || this.selectedMarkerObject instanceof THREE.Group)) return;
-
-    if(this.selectedMarkerObject) {
-      
-      this.transformControls.position.y = (this.selectedMarkerObject.position.y - 2);
-      this.transformControls.attach(this.selectedMarkerObject);
-
-      this.contextMenu.isShow = false;
-    }
-
-
-  },
-
   /**
    * @function selectObjectControl
+   * @param obj Three.Mesh | THREE.Object3D | THREE.Group
+   * 
    * 
    * @description 마우스 우클릭을 통한 ContextMenu에서 이동하기 버튼을 눌렀을 때 이벤트
    * onMenuClick case 96
@@ -1359,9 +1388,9 @@ export default {
    * 만약에 객체 우클릭 -> 이동하기 -> 객체선택 -> Drag&Drop 이벤트 발생되면
    * 로드되기전에 조작했던 object가 제어됨
    */
-  selectObjectControl() {
+  selectObjectControl(obj) {
 
-    if(!(this.selObject instanceof THREE.Mesh || this.selObject instanceof THREE.Object3D || this.selObject instanceof THREE.Group)) return;
+    if(!(obj instanceof THREE.Mesh || obj instanceof THREE.Object3D || obj instanceof THREE.Group)) return;
 
     this.history = [];
 
@@ -1374,61 +1403,59 @@ export default {
       this.selectedBoxHelper.geometry.dispose(); // BoxHelper의 geometry 제거
       this.selectedBoxHelper.material.dispose(); // BoxHelper의 material 제거
       this.selectedBoxHelper = null; // 참조 초기화
+    } else {
+
+      if(obj.userData.isMarker) {
+        this.transformControls.position.y = (obj.position.y -2);
+      } else {
+        this.transformControls.position.y = obj.position.y;
+        this.transformControls.attach(obj);
+
+      }
+
     }
 
-    this.selectedObject = this.selObject; // selObject는 우클릭으로 이벤트로 받아온 Three 객체
+    this.selectedObject = obj; // selObject는 우클릭으로 이벤트로 받아온 Three 객체
 
-    this.transformControls.position.y = (this.selObject.position.y);
-    this.transformControls.attach(this.selectedObject);
+    this.transformControls.attach(obj);
 
-    this.contextMenu.isShow = false;
-    this.isEditMode = true;
+    this.contextMenu.isShow = false; // 마우스 우클릭 - 컨텍스트 메뉴 false
+    this.isEditMode = true; 
 
-    // this.createGUI(this.selectedObject, this.transformControls)
+    // 우측 에디터 데이터 매핑
+    this.editorObject.position = obj.position;
+    this.editorObject.rotation = obj.rotation;
+    this.editorObject.scale = obj.scale;
+    this.editorObject.name = obj.name;
 
-    this.editorObject.position = this.selectedObject.position;
-    this.editorObject.rotation = this.selectedObject.rotation;
-    this.editorObject.scale = this.selectedObject.scale;
-    this.editorObject.name = this.selectedObject.name;
+    this.editSiderYn = true; // 우측 에디터 메뉴 Open
 
 
-    this.editSiderYn = true;
-
-    const { x, y } = this.getScreenPosition(this.selectedObject);
+    const { x, y } = this.getScreenPosition(obj);
 
     this.menuVisible = true;
 
     this.showUIForSelectedObject(x, y);
 
+    if(obj.userData.isIncludeMarker) {
+      this.markObjects.some((mark) => {
+        if(mark.mObject.uuid === obj.userData.connectId) {
+          this.selectedMarkerObject = mark.mObject;
 
-    // this.menuVisible = true;
+          this.editorObject.marker = {
+            size: this.selectedMarkerObject.geometry.parameters.options.size,
+            depth: this.selectedMarkerObject.geometry.parameters.options.depth,
+            curveSegments : this.selectedMarkerObject.geometry.parameters.options.curveSegments,
+            bevelEnabled: this.selectedMarkerObject.geometry.parameters.options.bevelEnabled
+          }
 
-    //   this.showUIForSelectedObject(x, y);
+          console.log(this.selectedMarkerObject)
 
-    // 부모가 Scene이 아닌 경우, 부모 그룹을 찾기 위해 올라가서 찾기
-    // if (this.selObject.parent && this.selObject.parent.name !== 'Scene') {
-    //   console.log("selObject has parent and it is not Scene.");
-    //   let groupParent = this.selObject.parent;
+        }
+      })
 
-    //   // 부모가 Group이나 Object3D가 아닌 경우까지 확인
-    //   while (groupParent && !(groupParent instanceof THREE.Scene)) {
-    //     console.log("Current Parent:", groupParent);
-    //     groupParent = groupParent.parent;
-    //   }
-
-    //   // 부모 그룹을 찾았으면 그 부모 그룹을 선택
-    //   if (groupParent) {
-    //     console.log("Found parent group:", groupParent);
-    //     this.selectedObject = groupParent;
-    //   }
-    // } else {
-    //   // Scene일 경우, 선택한 객체를 그대로 사용
-    //   console.log("selObject has no parent or parent is Scene.");
-    //   this.selectedObject = this.selObject;
-    // }
-
-    // this.transformControls.position.y = (this.selectedObject.position.y);// transitionControls가 위치 변경이 안되서 눈에는 안보여도 레이캐스터에 감지됨 그로 인해 y값을 변경하고 다시 그 선택한 객체 위치로 이동
-    // this.transformControls.attach(this.selectedObject);
+      this.editMarkerTabYn = true;
+    }
 
   },
 
@@ -1455,7 +1482,7 @@ export default {
   handleCircleMenuClick(menuItem) {
     switch(menuItem) {
       case "save":
-      
+
         console.log(`position x : ${this.selectedObject.position.x}`);
         console.log(`position y : ${this.selectedObject.position.y}`);
         console.log(`position z : ${this.selectedObject.position.z}`);
@@ -1465,23 +1492,74 @@ export default {
 
         this.activeObjects.push(this.selectedObject)
 
-        this.scene.remove(this.selectedBoxHelper);
-        this.selectedBoxHelper.geometry.dispose(); // BoxHelper의 geometry 제거
-        this.selectedBoxHelper.material.dispose(); // BoxHelper의 material 제거
-        this.selectedBoxHelper = null;
+        if(this.selectedBoxHelper) {
+          this.scene.remove(this.selectedBoxHelper);
+
+          this.selectedBoxHelper.geometry.dispose(); // BoxHelper의 geometry 제거
+          this.selectedBoxHelper.material.dispose(); // BoxHelper의 material 제거
+          this.selectedBoxHelper = null;
+
+        }
 
         this.transformControls.detach();
         this.transformControls.position.y = 20;
         // this.transformControls.enabled = false;
 
-        console.log("저장할 selectedObject@@@@@@@@@@@@@@")
-        console.log(this.selectedObject);
+        this.saveObject = this.selectedObject.clone(); //임시 테스트
 
         this.selectedObject = null;
         this.menuVisible = false;
         this.isEditMode = false;
 
         this.editSiderYn = false;
+
+        this.selectedMarkerObject = null;
+
+        // 우측 에디터 메뉴 마커 탭 활성화 여부
+        this.editMarkerTabYn = false;
+
+        // this.options = {
+        //   trs: true,
+        //   binary: true,
+        //   maxTextureSize: 1024,
+        //   onlyVisible: true
+        // };
+
+        this.gltfExporter.parse(this.saveObject, (gltf) => {
+
+          if(gltf instanceof ArrayBuffer) {
+            console.log(gltf)
+            this.save( new Blob( [ gltf ], { type: 'application/octet-stream' } ), "scene.glb" );
+          } else {
+            console.log(gltf)
+
+            const output = JSON.stringify( gltf, null, 2 );
+            // this.save( new Blob( [ output ], { type: 'text/plain' } ), "scene.gltf" );
+            this.save( new Blob( [ output ], { type: 'application/json' } ), "scene.gltf" );
+          }
+
+
+          // const formData = new FormData();
+          // formData.append('file', glbBlob, 'test_001');
+
+          // // API 서버에 POST 요청
+          // fetch('http://127.0.0.1:3000/files/upload', {
+          //     method: 'POST',
+          //     body: formData,
+          // })
+          // .then(response => response.json())
+          // .then(data => {
+          //     console.log('File upload successful:', data);
+          // })
+          // .catch(error => {
+          //     console.error('File upload failed:', error);
+          // });
+
+        }, (err) => {
+          console.log('Gltf/Glb 내보내기 실패', err);
+        }
+        ,this.options)
+        
 
         break;
       case "delete":
@@ -1527,6 +1605,13 @@ export default {
           this.editSiderYn = false;
           this.clearCollisionMessage();
 
+          this.selectedMarkerObject = null;
+
+          // 우측 에디터 메뉴 마커 탭 활성화 여부
+          this.editMarkerTabYn = false;
+
+
+          
 
         }
         break;
@@ -1564,11 +1649,9 @@ export default {
         // this.menuVisible = false;
         break;
       case "rotate":
-        console.log("rotate");
         this.transformControls.setMode('rotate')
         break;
       case "move":
-        console.log("move");
         this.transformControls.setMode('translate')
         break;
       default:
@@ -1576,14 +1659,43 @@ export default {
     }
   },
 
+  save(blob, filename) {
+    const link = document.createElement( 'a' );
+    link.style.display = 'none';
+    document.body.appendChild( link );
+
+    link.href = URL.createObjectURL( blob );
+    link.download = filename;
+    link.click();
+
+    document.body.removeChild(link);
+
+    const formData = new FormData();
+    formData.append('file', blob, filename);
+
+    // API 서버에 POST 요청
+    fetch('http://127.0.0.1:3000/files/upload', {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('File upload successful:', data);
+    })
+    .catch(error => {
+        console.error('File upload failed:', error);
+    });
+  },
+
   /**
    * 우선 markObject넣어야 함
    */
   create3DText() {
-    if (!this.editorMarker3DText) {
+    if (!this.editorMarker3DText.trim()) {
       alert("텍스트를 입력하세요");
       return;
     }
+
 
     // ✅ 1. 텍스트 지오메트리 생성
     const textGeometry = new TextGeometry(this.editorMarker3DText, {
@@ -1597,6 +1709,7 @@ export default {
     textGeometry.computeBoundingBox();
     textGeometry.center(); // ✅ 텍스트 중앙 정렬
 
+
     // ✅ 2. Bounding Box 크기 가져오기
     const bbox = textGeometry.boundingBox;
     const textHeight = bbox.max.y - bbox.min.y; // 텍스트 높이 계산
@@ -1607,68 +1720,41 @@ export default {
     this.scene.add(textMesh);
 
     // ✅ 4. 선택한 객체의 위치를 기반으로 텍스트 배치
-    if (this.selectedMarkerObject) {
+    if (this.selObject) {
       textMesh.position.set(
-        this.selectedMarkerObject.position.x,
-        this.selectedMarkerObject.position.y + textHeight + 2, //우선 뭐 이거 거의 하드코딩이라고 봐야함
-        this.selectedMarkerObject.position.z
+        this.selObject.position.x,
+        this.selObject.position.y + textHeight + 2, //우선 뭐 이거 거의 하드코딩이라고 봐야함
+        this.selObject.position.z
       );
-
-      const gui = new dat.GUI();
-    
-      const textFolder = gui.addFolder('텍스트 설정');
-      
-      // ✅ 위치 조절
-      textFolder.add(textMesh.position, 'x', -10, 10).name('위치 X');
-      textFolder.add(textMesh.position, 'y', -10, 10).name('위치 Y');
-      textFolder.add(textMesh.position, 'z', -10, 10).name('위치 Z');
-
-      // ✅ 회전 조절
-      textFolder.add(textMesh.rotation, 'x', 0, Math.PI * 2).name('회전 X');
-      textFolder.add(textMesh.rotation, 'y', 0, Math.PI * 2).name('회전 Y');
-      textFolder.add(textMesh.rotation, 'z', 0, Math.PI * 2).name('회전 Z');
-
-      // ✅ 크기 조절
-      textFolder.add(textMesh.scale, 'x', 0.1, 3).name('크기 X');
-      textFolder.add(textMesh.scale, 'y', 0.1, 3).name('크기 Y');
-      textFolder.add(textMesh.scale, 'z', 0.1, 3).name('크기 Z');
-
-      // ✅ 색상 변경
-      const colorController = { color: '#ffffff' };
-      textFolder.addColor(colorController, 'color').name('색상 변경').onChange((value) => {
-        textMesh.material.color.set(value);
-      });
-
-      textFolder.open(); // GUI 폴더 열기
-
-      this.transformControls.addEventListener('change', () => {
-          gui.updateDisplay();
-      });
-
-      // ✅ 5. 선(Line) 생성 (선택한 객체 <-> 텍스트 메시)
-      // const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
-      // const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-      //   this.selectedMarkerObject.position, 
-      //   textMesh.position
-      // ]);
-      // const line = new THREE.Line(lineGeometry, lineMaterial);
-      // this.scene.add(line);
     }
 
-    if(this.isTextRotating) {
-      let markObject = {
-        name: 'sss',
-        isShow: true,    // 초기 보기 설정이 true일 경우
-        isMarker2D:false,
-        mObject: null,    // 2D/3D 공통
-        sphere: null,     // 3D Marker Only
-        line: null,       // 3D Marker Only
-        // textMesh: null,   // 3D Marker Only
-        styleText: "",    // 2D Marker Only
-      };
+    // if(this.isTextRotating) {
+    let markObject = {
+      name: this.editorMarker3DText,
+      isShow: true,    // 초기 보기 설정이 true일 경우
+      isMarker2D:false,
+      mObject: textMesh,    // 2D/3D 공통
+      sphere: null,     // 3D Marker Only
+      line: null,       // 3D Marker Only
+      // textMesh: null,   // 3D Marker Only
+      styleText: "",    // 2D Marker Only
+      connect: this.selObject.uuid
+    };
 
-      markObject.mObject = textMesh;
+    markObject.mObject = textMesh;
+
+    textMesh.userData = {
+      isMarker: true,
+      connet: this.selObject.uuid,
+      name: this.editorMarker3DText
     }
+
+    this.markObjects.push(markObject);
+    // }
+
+    this.selObject.userData.isIncludeMarker = true;
+    this.selObject.userData.connectId = textMesh.uuid;
+
 
     // ✅ 5. Bounding Box 시각화 (디버깅용)
     // const bboxHelper = new THREE.BoxHelper(textMesh);
@@ -1684,6 +1770,7 @@ export default {
       z: textMesh.position.z + distanceFromText
     };
 
+
     // ✅ 7. 카메라 애니메이션 (Tween 사용)
     const cameraTween = new Tween(this.camera.position)
       .to(cameraPosition, 2000)
@@ -1696,19 +1783,84 @@ export default {
         this.controls.update();
       })
       .start();
-    
+
+
     this.selectedMarkerObject = textMesh;
 
-    this.selectMarkerObjectControl();
+    // this.selectedObject = textMesh;
+    // this.selectObjectControl(textMesh);
+
+    // this.selectMarkerObjectControl(textMesh)
+    this.selectObjectControl(textMesh)
+
+    // this.selectMarkerObjectControl();
 
     this.tweenGroup.add(cameraTween);
 
     // ✅ 8. 모달 닫기
     this.isMarkerModal = false;
-},
+  },
 
+  /**
+   * @function handleScrollStart
+   * 
+   * @description EditRightMenu에서 사용되는 Input type=range 스크롤링 핸들 이벤트
+   * 따로 시작 종료를 알 수 없기에 직접 만듬
+   */
+  handleScrollStart() {
+    console.log('Scroll started');
+    this.menuVisible = false;
 
+    const collisions = this.collidingObjects ? [...this.collidingObjects] : [];
 
+    const objectState = {
+      position: this.selectedObject.position.clone(),
+      quaternion: this.selectedObject.quaternion.clone(),
+      collisions: collisions // 충돌된 객체들
+    };
+
+    this.history.push(objectState);
+
+    // 스크롤 시작 시 실행할 로직 추가
+  },
+
+  /**
+   * @function handleScrollEnd
+   * 
+   * @description EditRightMenu에서 사용되는 Input type=range 스크롤링 핸들 이벤트
+   * 따로 시작 종료를 알 수 없기에 직접 만듬
+   */
+  handleScrollEnd() {
+    console.log('Scroll ended');
+    if(this.selectedObject) {
+      const { x, y } = this.getScreenPosition(this.selectedObject);
+      this.menuVisible = true;
+
+      this.showUIForSelectedObject(x, y);
+
+      const collisions = this.collidingObjects ? [...this.collidingObjects] : [];
+
+      // 현재 상태가 마지막으로 저장된 상태와 다른 경우에만 저장
+      const lastSavedState = this.history.length > 0 ? this.history[this.history.length - 1] : null;
+
+      // 선택된 객체와 마지막으로 저장된 객체를 비교
+      if (!lastSavedState || !lastSavedState.position.equals(this.selectedObject.position) || 
+          !lastSavedState.quaternion.equals(this.selectedObject.quaternion)) {
+
+          // 상태 객체를 저장 (위치, 회전, 충돌 정보 포함)
+          const objectState = {
+            position: this.selectedObject.position.clone(),
+            quaternion: this.selectedObject.quaternion.clone(),
+            collisions: collisions // 충돌된 객체들
+          };
+
+          // history에 상태 저장
+          this.history.push(objectState);
+      }
+
+    }
+    // 스크롤 끝났을 때 실행할 로직 추가
+  },
 
   /**
    * @function toggleCreateMarkerModel
@@ -1728,7 +1880,7 @@ export default {
       this.isEditMode = true;
 
       /** 여기서 넣어줘야함 */
-      this.selectedMarkerObject = this.selObject;
+      // this.selectedMarkerObject = this.selObject;
     }
     
   },
@@ -1776,7 +1928,6 @@ export default {
       this.handleCollision(this.collidingObjects[0]);  // 충돌 메시지 처리
     } else {
       this.isColliding = false;  // 충돌 상태 해제
-      // this.removeCollisionObjectBoundingBox;
     }
   },
   /* eslint-disable no-unused-vars */
@@ -1784,7 +1935,7 @@ export default {
 
 
   /**
-   * @function createGUI
+   * @function createGUI 현재는 커스터마이징해서 안쓰려고함
    * @param object 
    * @param transformControls
    * 
@@ -2206,6 +2357,7 @@ export default {
     setState() {
 
       console.log(`setState()`);
+      console.log(this);
 
       // 카메라 설정 정보를 조회 하여 입력
       if (this.initState.camera) {
@@ -2472,8 +2624,21 @@ export default {
         this.$refs.rendererContainer.clientHeight
       );
 
+      // this.composer.setSize(
+      //   this.$refs.rendererContainer.clientWidth,
+      //   this.$refs.rendererContainer.clientHeight
+      // );
+
+
       // 2D Mark가 존재할 경우 Position을 Update 함
       if(this.state.countMarker2D > 0) this.updateMark2DPos();
+
+      // mslee - 에디팅 중 resize될 때
+      if(this.menuVisible && this.selectedObject) {
+        const { x, y } = this.getScreenPosition(this.selectedObject);
+
+        this.showUIForSelectedObject(x, y);
+      }
 
     },
 
@@ -2532,6 +2697,8 @@ export default {
       const insObject = this.intersectObject(event);
       let isClearDiv = false;
       let isClearWidget = false;
+
+
 
       // Mouse Left 버튼 클릭하였을 경우
       if (event.button == 0) {
@@ -2612,6 +2779,59 @@ export default {
 
       if(event)
         event.stopPropagation(); // 이벤트 전파 중지 (메뉴 Click 시 3D콘텐츠에 대한 반응은 하지 않도록 함)
+
+
+        // mslee
+
+        // 카메라와 객체 사이의 방향 벡터 계산
+        const direction = new THREE.Vector3().subVectors(this.camera.position, this.selObject.position).normalize();
+
+        // 원하는 거리 (객체에서 20 유닛 떨어짐)
+        const distance = 20;
+
+        // 객체 위치에서 방향 벡터를 따라 거리를 추가한 위치로 이동
+        const targetPosition = this.selObject.position.clone().add(direction.multiplyScalar(distance));
+
+        // 선택된 객체를 바라보는 카메라의 목표 쿼터니언 계산
+        const targetQuaternion = new THREE.Quaternion();
+        this.camera.lookAt(this.selObject.position);
+        targetQuaternion.copy(this.camera.quaternion); // 선택된 객체를 향한 쿼터니언
+
+        // 카메라의 쿼터니언을 원래대로 복원
+        const initialQuaternion = this.camera.quaternion.clone();
+
+        // 카메라 위치와 쿼터니언을 동시에 트윈으로 변경
+        const cameraTween = new Tween({
+            position: this.camera.position.clone(),
+            quaternion: initialQuaternion.clone(),
+        })
+          .to({
+            position: targetPosition, // 객체에서 일정 거리만큼 떨어진 위치로 이동
+            quaternion: targetQuaternion.clone(), // 선택된 객체를 바라보는 쿼터니언 적용
+          }, 1000)
+          .easing(Easing.Quadratic.InOut)
+          .onUpdate((obj) => {
+            // 카메라 위치와 쿼터니언을 업데이트
+            this.camera.position.copy(obj.position);
+            this.camera.quaternion.copy(obj.quaternion);
+
+            // 카메라 컨트롤 업데이트
+            this.controls.update();
+          })
+          .onComplete(() => {
+            // 완료 후 따로 target을 설정하지 않고 자연스럽게 종료
+            console.log('카메라 이동 및 회전 완료');
+          })
+          .start();
+
+        // TweenGroup에 추가
+        this.tweenGroup.add(cameraTween);
+
+        
+        // mslee
+
+
+
 
       // console.log(`onMouseLeftClick(${event.button})`);
 
@@ -2750,8 +2970,6 @@ export default {
       // event.preventDefault(); // 브라우저 기본 컨텍스트 메뉴 차단
       event.stopPropagation(); // 이벤트 전파 중지 (메뉴 Click 시 3D콘텐츠에 대한 반응은 하지 않도록 함)
 
-      
-
       this.clearDiv();
 
       const position = {
@@ -2769,6 +2987,9 @@ export default {
         if (object) {
           console.log("onMouseRightClick : ", objName);
           this.selObject = object;
+
+          console.log("@@@@@@@@@@@@")
+          this.outlinePass.selectedObjects = [this.selObject];
         }
         else {
           console.log("onMouseRightClick : Object Empty");
@@ -3025,7 +3246,16 @@ export default {
           this.toggleInserModal();
           break;
         case 96:
-          this.selectObjectControl();
+
+          console.log(this.selObject)
+          console.log(this.markObjects)
+
+          if(!(this.selObject instanceof THREE.Mesh || this.selObject instanceof THREE.Object3D || this.selObject instanceof THREE.Group)) {
+            
+            alert("잘못된 접근입니다.")
+            return
+          }
+          this.selectObjectControl(this.selObject);
           break;
         case 97:
           this.toggleCreateMarkerModel();
@@ -4138,13 +4368,16 @@ export default {
         this.hemiLight.position.set(HLPosition.x, HLPosition.y, HLPosition.z);
         this.scene.add(this.hemiLight);
       }
+
     },
+
 
     // Background Color를 설정
     // setLightColor(color) {},
 
     // Background Image 또는 Color를 설정
     setBackgroud() {
+      
 
       let type = "color";
       let color = "#3E3D42";
@@ -6692,6 +6925,54 @@ FullScreen이 아닐 경우 특정 사이즈를 지정해야 정상 사용 가�
 }
 
 
+/** insert tool */
+.insert-sidebar {
+  position: fixed;
+  top: 68px;
+  left: 66px;
+  width: 300px; /* Reduced width */
+  height: calc(100% - 68px);
+  background-color: #4d4d4f;
+  border-left: 2px solid #444;
+  box-shadow: -4px 0 10px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  padding: 8px; /* Reduced padding */
+  display: flex;
+  flex-direction: column;
+  font-family: 'Arial', sans-serif;
+}
+
+.insert-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 5px 0 5px;
+    font-weight: bold;
+}
+
+.insert-title {
+    font-size: 1em; /* Slightly smaller font size */
+}
+
+.insert-close-btn {
+    background-color: #ff5050;
+    border: none;
+    color: #fff;
+    padding: 4px 8px; /* Smaller button size */
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.insert-close-btn:hover {
+    background-color: #e04e4e;
+}
+
+.divider {
+    width: 100%;
+    border: 1px solid #555;
+    margin: 6px 0; /* Reduced margin */
+}
 
 
 

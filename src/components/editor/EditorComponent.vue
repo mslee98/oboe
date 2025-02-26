@@ -1,9 +1,9 @@
 <template>
-  <div style="overflow-y:auto;">
-    <div style="font-weight: bold; color: #fff; margin: 4px 0 4px 10px; font-size: 1.2em; text-align: left">
-      Category
+  <div>
+    <div style="font-weight: bold; color: #fff; margin: 4px 0 4px 10px; font-size: 1em; text-align: center">
+      1Depth
     </div>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px; padding: 10px;">
+    <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 10px;">
         <div @click="showDetail(1)" class="hover-card">
             <span class="card-text">서버 / 랙</span> 
             <img class="card-image" src="@/assets/image/editor/server-rack.png" alt="서버/랙 이미지"/>
@@ -26,7 +26,14 @@
     </div>
 
     <!-- divider -->
-    <div style="width:100%; border: 1px solid #828387; margin: 4px 0 4px 0;" ></div>
+    <div class="divider" ></div>
+
+    <!-- 기본 화면: 선택된 데이터가 없을 때 중앙 정렬 -->
+    <div v-if="!isDetailVisible" class="empty-state-container">
+      <p style="text-align: center; color: #fff;">선택된 데이터가 없습니다</p>
+      <img class="default-image" width="200px" src="@/assets/image/editor/undraw_file-search_cbur.svg" alt="기본 화면 이미지"/>
+    </div>
+
     <EditorDetailComponent v-if="isDetailVisible" :itemId="selectedItemId" />
   </div>
     
@@ -64,8 +71,8 @@ export default {
 /** mslee */
 .hover-card {
   background-color: #f5f5f5;
-  width: 150px;
-  height: 150px;
+  width: 120px;
+  height: 120px;
   border-radius: 15px;
   display: flex;
   flex-direction: column;
@@ -87,14 +94,14 @@ export default {
 }
 
 .card-text {
+  margin-top: 5px;
   color: #333;
   font-size: 14px;
   font-weight: bold;
-  margin-bottom: 10px;
 }
 
 .card-image {
-  width: 100px;
+  width: 90px;
   height: auto;
   transition: transform 0.3s ease; /* 이미지 크기 변화에 대한 부드러운 전환 효과 */
 }
@@ -102,6 +109,20 @@ export default {
 .hover-card:hover .card-image {
   
   transform: scale(1.1); /* hover-card에 마우스를 올렸을 때 이미지 크기 10% 확대 */
+}
+
+.divider {
+    width: 100%;
+    border: 1px solid #555;
+    margin: 6px 0; /* Reduced margin */
+}
+
+.empty-state-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%; /* 부모의 남은 공간을 모두 차지하도록 */
 }
 
 /** mslee */
