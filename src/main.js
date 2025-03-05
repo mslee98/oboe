@@ -8,7 +8,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 // import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
 import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
 
-
+import './assets/index.css'; 
 
 // createApp(App).mount("#app");
 const app = createApp(App);

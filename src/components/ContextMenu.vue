@@ -1,35 +1,14 @@
 <template>
-  <!-- div class="context-menu" v-stop-propagation>
-    <ul>
-      <li @click="onHideObject">Hide Object</li>
-      <li @click="onRemoveObject">Remove Object</li>
-      <li @click="onInspectObject">Inspect Object</li>
-      <li @click="onMoveObject">Move Object</li>
-      <li @click="onCloseContextMenu">Close</li>
-    </ul>
-  </div -->
 
   <div id="pop-section-2" v-stop-propagation>
     <div class="pop-section-2-con">
-      <!-- div class="pop-section-2-top-section">
-        <div class="pop-section-2-top-box">
-          <img
-            @click.stop="onCloseContextMenu"
-            style="cursor: pointer"
-            src="@/assets/image/ico_close.png"
-            alt="닫기"
-            width="12px"
-            height="12px"
-          />
-        </div>
-      </div -->
 
       <div class="ps2-section">
         <div class="ps2">
           <ul>
             
-            <li>
-              <table width="100%">
+            <li style="display:flex; flex-direction: column">
+              <table>
                 <tbody>
                   <tr>
                     <td>
@@ -166,48 +145,48 @@
           </ul>
         </div>
 
-        <div v-if="state.showAttribute" class="ps2">
-          <ul>
-            <li><div class="pop-section-line"></div></li>
+        <div v-if="state.showAttribute" class="attribute-container">
+          <ul class="timeline">
+            <li><div class="timeline-line"></div></li>
             <li>
-              <table width="100%">
+              <table width="100%" class="attribute-table">
                 <tbody>
                   <tr>
-                    <td>부모 :</td>
+                    <td class="attribute-label">부모 :</td>
                     <td>{{attrContent.parent}}</td>
                   </tr>
                   <tr>
-                    <td>자식 :</td>
+                    <td class="attribute-label">자식 :</td>
                     <td>{{attrContent.child}}</td>
                   </tr>
                   <tr>
-                    <td>크기 :</td>
+                    <td class="attribute-label">크기 :</td>
                     <td>{{attrContent.size}}</td>
                   </tr>
                   <tr>
-                    <td>위치 :</td>
+                    <td class="attribute-label">위치 :</td>
                     <td>{{attrContent.position}}</td>
                   </tr>
                   <tr>
                     <td colspan="2">
-                      <table>
+                      <table class="btn-container">
                         <tbody>
                           <tr>
                             <td
                               v-for="(text, index) in attrContent.attrBtns"
                               :key="index"
                             >
-                              <div class="btn-tiny">{{ text }}</div>
+                              <div class="btn-small">{{ text }}</div>
                             </td>
                           </tr>
                         </tbody>
                       </table>
                     </td>
                   </tr>
-              </tbody>
-            </table>
+                </tbody>
+              </table>
             </li>
-            <li><div class="pop-section-line"></div></li>
+            <li><div class="timeline-line"></div></li>
           </ul>
         </div>
 
@@ -544,178 +523,170 @@ export default {
 </script>
 
 <style scoped>
-/*
-.context-menu {
-  position: fixed;
-  background: white;
-  border: 1px solid #ccc;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
-  z-index: 5;
-}
-.context-menu ul {
-  list-style: none;
-  margin: 0;
-  padding: 5px 0;
-}
-.context-menu ul li {
-  padding: 8px 15px;
-  cursor: pointer;
-}
-.context-menu ul li:hover {
-  background-color: #eee;
-}
-
-.not-enable {
-  cursor: default;
-}
-.not-enable:hover {
-  background-color: white;
-}
-*/
 a {
   color: inherit;
   text-decoration: none;
 }
 
-ul,
-li {
+/* 리스트 스타일 초기화 */
+ul, li {
   margin: 0;
   padding: 0;
   list-style: none;
-  text-align: left;
 }
 
-/** 우클릭 팝업 **/
+/* 팝업 기본 스타일 */
 #pop-section-2 {
+  text-align: left;
   position: fixed;
-  /* width: 160px;
-  height: 220px;
-  top: 479px;
-  left: 1009px; */
   min-width: 160px;
-  background-color: #1a1a1e;
+  background-color: #2d2f36; /* 어두운 배경 */
   color: #fff;
-  border-radius: 10px;
-/* z-index: 1; */
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); /* 부드러운 그림자 추가 및 강도 증가 */
+  padding: 8px;
+  z-index: 9999;
+  transition: transform 0.2s ease-in-out;
+  overflow: hidden; /* 팝업 크기 조정 */
 }
+
+/* 팝업 컨테이너 */
 .pop-section-2-con {
-  position: relative;
-  padding-top: 15px;
-  padding-bottom: 15px;
-  padding-left: 15px;
-  padding-right: 15px;
-  background-color: #1a1a1e;
-  border-radius: 10px;
-  color: #fff;
+  padding: 10px;
+  background-color: #2d2f36;
+  border-radius: 8px;
 }
+
+/* 팝업 상단 영역 */
 .pop-section-2-top-section {
   display: flex;
-  border-bottom: 0px solid #8d8e92;
+  justify-content: space-between;
+  border-bottom: 1px solid #3a3f47;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
 }
+
+/* 닫기 버튼 */
 .pop-section-2-top-box {
   display: flex;
-  flex-basis: 0;
-  flex-grow: 1;
-  padding-left: 10px;
   justify-content: flex-end;
-  vertical-align: top;
-}
-
-/** 우클릭 팝업 텍스트 **/
-.ps2-box img {
-  /* width: 19px;
-  height: 19px; */
-  margin-right: 10px;
+  padding-left: 10px;
   cursor: pointer;
+  color: #8e929d;
+  font-size: 16px; /* 더 명확하게 크기 조정 */
 }
 
+/* 팝업 메뉴 항목 */
 .ps2-section {
-  flex-grow: 1;
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  position: relative;
-}
-.ps2-section .ps2 {
   width: 100%;
 }
+
 .ps2-section .ps2 ul {
   display: flex;
   flex-direction: column;
 }
+
 .ps2-section .ps2 ul li {
-  flex-grow: 1;
-  box-sizing: border-box;
-  margin-bottom: 8px;
-}
-.ps2-section .ps2 ul li a {
-  display: block;
-}
-
-
-.menu-on {
+  margin-bottom: 4px; /* 항목 간격을 좀 더 좁혔습니다 */
+  transition: background-color 0.2s ease;
+  border-radius: 5px;
+  display:flex;
+  
+  flex-wrap: wrap;
+  
   cursor: pointer;
 }
 
-.menu-off {
-  opacity: 0.5;
+.ps2-section .ps2 ul li div {
+  display: flex;
+  margin: 2px;
+}
+
+/* 메뉴 항목에 마우스 오버 시 스타일 */
+.ps2-section .ps2 ul li:hover {
+  background-color: #3c4048; /* 약간 밝은 색으로 하이라이트 */
 }
 
 
-img {
-  vertical-align: middle;
+
+/* 메뉴 항목 텍스트 스타일 */
+.ps2-section .ps2 ul li a {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px; /* 왼쪽 간격을 줄였습니다 */
+  font-size: 14px;
+  color: #fff;
+  font-weight: 400;
+  transition: color 0.2s ease;
 }
 
-.img-off {
-  opacity: 0.5;
+/* 메뉴 항목 텍스트 마우스 오버 */
+.ps2-section .ps2 ul li a:hover {
+  color: #ff5f57; /* 강조 색상 */
 }
 
-span {
-  vertical-align: bottom;
+/* 아이콘 및 텍스트 스타일 */
+.ps2-box img {
+  margin-right: 10px; /* 아이콘과 텍스트 간격을 줄였습니다 */
+  width: 14px;
+  height: 14px;
 }
 
 .txt {
   flex-grow: 1;
-  margin-left: 10px;
-  box-sizing: border-box;
-  font-size: 15px;
+  margin-left: 5px;
+  font-size: 14px; /* 글자 크기를 조금 줄였습니다 */
   color: #fff;
-  line-height: 20px;
+  line-height: 18px;
 }
 
-.txt-off {
-  flex-grow: 1;
-  margin-left: 15px;
-  box-sizing: border-box;
-  font-size: 15px;
-  color: #747474;;
-  line-height: 20px;
+/* 비활성화된 메뉴 항목 */
+.menu-off {
+  opacity: 0.5;
 }
 
-.ps2-section .ps2 .txt-big {
-  flex-grow: 1;
-  box-sizing: border-box;
-  margin-bottom: 8px;
-  font-size: 17px;
-  color: #fff;
-  line-height: 20px;
-  vertical-align: middle;
+/* 버튼 스타일 */
+.btn-tiny {
+  background-color: #4e5056;
+  margin: 0px 2px;
+  padding: 4px 8px; /* 버튼 여백을 조금 더 키웠습니다 */
+  border: 1px solid #626566;
+  border-radius: 4px;
+  color: white;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
+/* 버튼 호버 시 색상 변경 */
+.btn-tiny:hover {
+  background-color: #646969;
+}
+
+/* 팝업 하단 라인 */
 .pop-section-line {
   display: flex;
-  border-bottom: 1px solid #8d8e92;
+  border-bottom: 1px solid #3a3f47;
+  margin-bottom: 8px;
 }
 
-.btn-tiny {
-  background-color: #646464;
-  margin: 0px 1px;
-  padding: 1px 5px;
-  border: 1;
-  border-radius: 0.2rem;
-  color: white;
-  /* font-weight: bold; */
-  font-size: 12px;
+/* 팝업 애니메이션 */
+#pop-section-2 {
+  transform: translateY(10px);
+  opacity: 0;
+  animation: pop-up 0.3s ease-out forwards; /* 팝업이 올라오는 애니메이션 */
+}
+
+@keyframes pop-up {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 

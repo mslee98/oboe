@@ -5,6 +5,26 @@
     :style="{ top: `${menuY}px`, left: `${menuX}px` }"
   >
 
+
+  <div
+      class="menu-item"
+      :class="{ 'disabled': history.currentIndex >= history.length -1}"
+      style="transform: rotate(-60deg) translate(200px) rotate(60deg);"
+      @click="handleClick('redo')"
+      @dragenter.stop.prevent
+      @dragover.stop.prevent
+      @drop.stop.prevent
+      @mouseenter="showTooltip('redo')"
+      @mouseleave="hideTooltip"
+    >
+      <div>
+        <img class="object-icons" width=24px height=24 src="@/assets/image/editor/icon_undo.png" draggable="false" style="transform: scaleX(-1);"/>
+      </div>
+      <div class="tooltip" v-show="activeTooltip === 'redo'" :style="tooltipPosition('redo')">
+        되돌리기 취소: 취소 이전 상태로 되돌립니다
+      </div>
+    </div>
+
     <div
       class="menu-item"
       :class="{ 'disabled': isColliding }"
@@ -17,26 +37,28 @@
       @mouseleave="hideTooltip"
     >
       <div class="tooltip-container">
-          <img
-            class="object-icons"
-            width="24px"
-            height="24"
-            src="@/assets/image/editor/icon_save.png"
-            draggable="false"
-          />
-          <!-- 저장 버튼 위에 툴팁, isColliding 상태에 따라 항상 표시 -->
-            <div 
-              class="tooltip" 
-              v-show="isColliding" 
-              :style="[tooltipPosition('save'), { backgroundColor: '#ff5050' }]">
-              <span>⚠ Warning: 충돌 감지</span>
-            </div>
-            <!-- isColliding이 false일 경우 다른 툴팁 표시 -->
-            <div class="tooltip" v-show="!isColliding && activeTooltip === 'save'" :style="tooltipPosition('save')">
-              <span>저장: 객체 상태를 저장합니다</span>
-            </div>
-          </div>
+        <img
+          class="object-icons"
+          width="24px"
+          height="24"
+          src="@/assets/image/editor/icon_save.png"
+          draggable="false"
+        />
+      <!-- 저장 버튼 위에 툴팁, isColliding 상태에 따라 항상 표시 -->
+        <div 
+          class="tooltip" 
+          v-show="isColliding" 
+          :style="[tooltipPosition('save'), { backgroundColor: '#ff5050' }]">
+          <span>⚠ Warning: 충돌 감지</span>
         </div>
+        <!-- isColliding이 false일 경우 다른 툴팁 표시 -->
+        <div class="tooltip" v-show="!isColliding && activeTooltip === 'save'" :style="tooltipPosition('save')">
+          <span>저장: 객체 상태를 저장합니다</span>
+        </div>
+      </div>
+    </div>
+
+    
     
     <div
       class="menu-item"
@@ -60,7 +82,7 @@
 
     <div
       class="menu-item"
-      :class="{ 'disabled': history.length === 0}"
+      :class="{ 'disabled': history.currentIndex === 0}"
       style="transform: rotate(30deg) translate(200px) rotate(-30deg);"
       @click="handleClick('undo')"
       @dragenter.stop.prevent
@@ -152,7 +174,10 @@ export default {
         delete: { top: '-30px', left: '50%', transform: 'translateX(-50%)' },
         undo: { top: '-30px', left: '50%', transform: 'translateX(-50%)' },
         rotate: { top: '-30px', left: '50%', transform: 'translateX(-50%)' },
-        move: { top: '-30px', left: '50%', transform: 'translateX(-50%)' }
+        move: { top: '-30px', left: '50%', transform: 'translateX(-50%)' },
+        redo: { top: '-30px', left: '50%', transform: 'translateX(-50%)' },
+
+        
       };
       return positions[item];
     },

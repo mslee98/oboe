@@ -42,7 +42,7 @@
         <!-- Size Section -->
         <div class="property-group">
           <div @click="toggleCollapse('size')" class="section-header">
-            <span>
+            <span class="flex items-center">
               <img class="object-icons" width=22 src="@/assets/image/editor/icon_scale.png" style="margin-right: 5px">
               크기(Scale)
             </span>
@@ -84,7 +84,7 @@
         <!-- Position Section -->
         <div class="property-group">
           <div @click="toggleCollapse('position')" class="section-header">
-            <span>
+            <span class="flex items-center">
             <img class="object-icons" width=22 src="@/assets/image/editor/icon_move.png" style="margin-right: 5px">
               위치(Position)
             </span>
@@ -137,7 +137,7 @@
         <!-- Rotation Section -->
         <div class="property-group">
             <div @click="toggleCollapse('rotation')" class="section-header" data-section="rotation">
-                <span>
+                <span class="flex items-center">
                   <img class="object-icons" width=22 src="@/assets/image/editor/icon_rotate.png" style="margin-right: 5px">
                   회전(Rotation)
                 </span>
@@ -179,7 +179,7 @@
         <!-- Rotation Section -->
         <div v-if="editMarkerTabYn" class="property-group">
             <div @click="toggleCollapse('marker')" class="section-header" data-section="marker">
-                <span>
+                <span class="flex items-center">
                   <img class="object-icons" width=22 src="@/assets/image/editor/icon_rotate.png" style="margin-right: 5px">
                   마커 설정
                 </span>
@@ -273,10 +273,9 @@
                 updatedEditorObject[group].x = value;
                 updatedEditorObject[group].y = value;
                 updatedEditorObject[group].z = value;
-            } else if (group === 'marker') { 
-                this.$emit('update-marker', { axis, value });
 
-                
+            } else if (group === 'marker') { 
+                this.$emit('update-marker', { axis, value });       
 
                 this.selectedMarkerObject.geometry.parameters.options[axis] = value; 
             } else {

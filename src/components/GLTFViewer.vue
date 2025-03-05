@@ -1,33 +1,7 @@
 <template>
   <div class="renderer-box">
     <div ref="rendererContainer" class="renderer-container" >
-      
-      <!-- Top 메뉴 -->
-      <!-- div v-show="divMenu.isShow" class="menu-container" v-stop-propagation>
-        <button @click.stop="onMenuClick" data-index="91">CXARENA</button>
-        <button @click.stop="onMenuClick" data-index="92">서버룸</button>
-        <button @click.stop="onMenuClick" data-index="93">서버랙</button>
-        <   !-- button @click.stop="onMenuClick" data-index="94">랙Old</button --    >
 
-        <button @click.stop="onMenuClick" data-index="10">Camera</button>
-        <button @click.stop="onMenuClick" data-index="11">Zoom</button>
-        <button @click.stop="onMenuClick" data-index="9">FOV</button>
-        <button @click.stop="onMenuClick" data-index="1">Rotation</button>
-        <button @click.stop="onMenuClick" data-index="2">WireFrame</button>
-        <button @click.stop="onMenuClick" data-index="3">Grid</button>
-        <button @click.stop="onMenuClick" data-index="4">Preset</button>
-        <button @click.stop="onMenuClick" data-index="5">Delete</button>
-        <button @click.stop="onMenuClick" data-index="6">MSGShow</button>
-        <button @click.stop="onMenuClick" data-index="7">MSGClear</button>
-        <button @click.stop="onMenuClick" data-index="8">위치정보</button>
-      </div -->
-
-      <!-- 화면 Title 메뉴 -->
-      <!-- div v-if="GNBar.isShow" class="gnb-container" v-stop-propagation>
-        <div class="logo-box">
-          <img src="@/assets/image/logo_header.png" alt="3D Conv Viewer" />
-        </div>
-      </div -->
       <GNBar class="gnb-container"
         v-if="GNBar.isShow"
         :style="{height : `${GNBar.height}px`}"
@@ -50,7 +24,6 @@
         @setMenuClick="onMenuClick"
         v-stop-propagation
       />
-      <!-- height: `calc(100vh - ${GNBar.isShow ? GNBar.height : 0}px) -->
 
       <div class="mess-container" v-show="divEMsg.isShow" v-stop-propagation>
         <div class="mess-ctrl">
@@ -96,7 +69,7 @@
         :menu-x="menuX" 
         :menu-y="menuY"
         :isColliding="isColliding"
-        :history="history"
+        :history="objectHistory[selectedObject?.uuid] || []"
         @menuItemClicked="handleCircleMenuClick" 
       ></CircleMenuComponent>
 
@@ -150,6 +123,7 @@
         :editSiderYn="editSiderYn"
         :menuVisible="menuVisible"
         :editMarkerTabYn="editMarkerTabYn"
+
         v-model:editorObject="editorObject"
 
         @scrollStart="handleScrollStart"
@@ -157,6 +131,21 @@
         
         @toggleEditorRightMenu="toggleEditorRightMenu"
         @sendEditorObjectUpdate="handleEditorObjectUpdate"
+      />
+
+
+      <!-- <div v-if="isConfirmVisible" id="customConfirm" class="confirm-modal hidden">
+        <div class="modal-content">
+          <p>Are you sure you want to proceed?</p>
+          <div class="buttons">
+            <button id="confirmYes">확인</button>
+            <button id="confirmNo" @click="confirmCancle">취소</button>
+          </div>
+        </div>
+      </div> -->
+
+      <LoadingComponent
+        :isSaveLoading="isSaveLoading"
       />
 
 
@@ -285,6 +274,7 @@ import CircleMenuComponent from './editor/CircleMenuComponent';
 import { Easing, Group, Tween } from "@tweenjs/tween.js";
 import EditorRightMenu from "./editor/EditorRightMenu.vue";
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
+import LoadingComponent from './editor/LoadingComponent.vue';
 // import { TextureUtils } from "three";
 
 // import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
@@ -329,7 +319,8 @@ export default {
     ObjAttribViewer,
     EditorComponent,//mslee import component
     CircleMenuComponent,
-    EditorRightMenu
+    EditorRightMenu,
+    LoadingComponent
   },
   props: {
     /*
@@ -354,6 +345,15 @@ export default {
 
       viewHelper: null,
 
+      isSaveLoading: false,
+
+      // isConfirmVisible: false,
+
+      objectHistory: {},
+
+      /**
+       * 객체 저장할 때 필요한 options 
+       */
       saveParams: {
         trs: false,
         onlyVisible: true,
@@ -361,8 +361,14 @@ export default {
 				maxTextureSize: 4096
       },
 
+      /**
+       * 우측 에디터 탭 메뉴 시 마커가 있는 객체는 Marker Tab 활성화를 위한 변수
+       */
       editMarkerTabYn: false,
 
+      /**
+       * 우측 에디터 커스텀 Dat.gui로 조작하기 위한 변수
+       */
       editorObject: {
         position: { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -643,7 +649,7 @@ export default {
 
         showMarker: false, // 마커를 보여 줄지 여부
         showWireframe: false, // Wire Frame 보여 줄지 여부
-        showGrid: false, // 화면에 Grid를 보여 줄지 여부
+        showGrid: true, // 화면에 Grid를 보여 줄지 여부
         showAutoRotate: false, // 자동 회전을 할지 여부
         showHideObject: false, // 숨김 처리된 Object를 보여 줄지 여부
         showEMsg: false, // Event Message를 보여 줄지 여부
@@ -781,31 +787,12 @@ export default {
       this.isAdmin = false;
       if(this.userType == "admin") this.isAdmin = true;
 
-      // this.d3ContId = this.modelId;
-      // this.loadGLTF(this.d3ContId);
-
       this.loadAPI(this.modelId);
-
 
       // async 함수들의 진행 상태를 기반으로 선/후 관계 기반으로 함수를 처리
       this.state.initAsyncTimer = setInterval(() => {
         this.setInitCheckAsync();
       }, this.state.initAsyncInterval);      
-
-
-      /*
-      if (this.modelId == "") {
-        this.d3ContId = "S02";
-        this.loadGLTF(this.d3ContId);
-      }
-      */
-
-      /*/ 컨텐츠 ID가 없을 경우 "S02"를 사용하도록 함
-      if (this.d3ContId == "") {
-        this.d3ContId = "S02";
-        this.loadGLTF(this.d3ContId);
-      }
-      */
 
     },
 
@@ -872,25 +859,6 @@ export default {
       this.hemiLight = null;
       this.dirLight = null;
 
-      /*
-      // [조명] 하늘 색과 땅 색을 섞은 은은한 조명
-      this.hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
-      this.hemiLight.position.set(0, 20, 0);
-      scene.add(this.hemiLight);
-
-      // 기존의 DirectionalLight를 밝게 설정
-      const intensity = 3;
-      this.dirLight = new THREE.DirectionalLight(0xffffff, intensity);
-      this.dirLight.position.set(5, 10, 7.5);
-      scene.add(this.dirLight);
-      */
-
-
-      // Grid 추가
-      this.gridHelper = new THREE.GridHelper(10, 10);
-      this.gridHelper.visible = this.state.showGrid; // 초기에는 Grid가 보이지 않음
-      scene.add(this.gridHelper);
-
       this.parentGroup = new THREE.Group();
       scene.add(this.parentGroup);
 
@@ -919,6 +887,21 @@ export default {
       this.transformControls = new TransformControls(this.camera, renderer.domElement);
       this.transformControls.setSpace('local');
       scene.add(this.transformControls);
+
+      const groundGeo = new THREE.PlaneGeometry(100,100);
+      const groundMat =  new THREE.MeshStandardMaterial({
+        color: 0x7e8184,
+        transparent: true,
+        opacity: 0.8
+      })
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+
+      this.gridHelper = new THREE.GridHelper(100, 100, 0xffffff, 0x8dd6ff);
+      this.gridHelper.position.y = 0.01;
+      this.scene.add(this.gridHelper);
+
+      this.scene.add(this.gridHelper)
 
       const animate = () => {
         requestAnimationFrame(animate);
@@ -954,7 +937,7 @@ export default {
       };
       animate();
 
-      scene.add(new THREE.AxesHelper(10,10,10));
+      scene.add(new THREE.AxesHelper(30,30,30));
 
       /**
        * @author mslee
@@ -970,28 +953,29 @@ export default {
        this.controls.addEventListener('start', () => {
         this.menuVisible = false;
 
-        if (this.selectedObject) {
-          // 충돌 정보가 있다면 이를 상태에 포함시켜 저장
-          const collisions = this.collidingObjects ? [...this.collidingObjects] : [];
+        // if (this.selectedObject) {
+        //   // 충돌 정보가 있다면 이를 상태에 포함시켜 저장
+        //   const collisions = this.collidingObjects ? [...this.collidingObjects] : [];
 
-          // 현재 상태가 마지막으로 저장된 상태와 다른 경우에만 저장
-          const lastSavedState = this.history.length > 0 ? this.history[this.history.length - 1] : null;
+        //   // 현재 상태가 마지막으로 저장된 상태와 다른 경우에만 저장
+        //   const lastSavedState = this.history.length > 0 ? this.history[this.history.length - 1] : null;
 
-          // 선택된 객체와 마지막으로 저장된 객체를 비교
-          if (!lastSavedState || !lastSavedState.position.equals(this.selectedObject.position) || 
-              !lastSavedState.quaternion.equals(this.selectedObject.quaternion)) {
+        //   // 선택된 객체와 마지막으로 저장된 객체를 비교
+        //   if (!lastSavedState || !lastSavedState.position.equals(this.selectedObject.position) || 
+        //       !lastSavedState.quaternion.equals(this.selectedObject.quaternion)) {
 
-              // 상태 객체를 저장 (위치, 회전, 충돌 정보 포함)
-              const objectState = {
-                position: this.selectedObject.position.clone(),
-                quaternion: this.selectedObject.quaternion.clone(),
-                collisions: collisions // 충돌된 객체들
-              };
+        //       // 상태 객체를 저장 (위치, 회전, 충돌 정보 포함)
+        //       const objectState = {
+        //         position: this.selectedObject.position.clone(),
+        //         quaternion: this.selectedObject.quaternion.clone(),
+        //         collisions: collisions // 충돌된 객체들
+        //       };
 
-              // history에 상태 저장
-              this.history.push(objectState);
-          }
-        }
+        //       // history에 상태 저장
+        //       this.history.push(objectState);
+        //   }
+        // }
+        
       });
 
       /**
@@ -1023,6 +1007,8 @@ export default {
 
         if (this.transformControls.getMode() === 'rotate') {
             this.transformControls.setRotationSnap(Math.PI / 8); // 90도 스냅 적용 - 이거 메뉴에 추가해서 토글로 해야할듯?
+        } else if(this.transformControls.getMode() === 'scale') { 
+            // this.transformControls.position = this.selectedObject.position;
         } else {
             this.transformControls.setRotationSnap(null); // 다른 모드에서는 스냅 해제
         }
@@ -1050,6 +1036,13 @@ export default {
       this.transformControls.addEventListener('change', () => {
 
         if(this.selectedObject) {
+
+          // console.log("ssssss")
+          // if(this.transformControls.getMode() === 'scale') {
+          //   this.transformControls.position.x = this.selectedObject.position.x;
+          //   this.transformControls.position.z = this.selectedObject.position.z;
+          // }
+
           this.selectedObject.rotation.setFromQuaternion(this.selectedObject.quaternion);
 
           if(this.selectedMarkerObject) {
@@ -1068,6 +1061,7 @@ export default {
        * tanslate | rotate  시작과 종료를 말함
        */
       this.transformControls.addEventListener('dragging-changed', (event) => {
+
           // 드래깅 중일 때 버튼을 숨깁니다.
           if (event.value) {
 
@@ -1080,6 +1074,33 @@ export default {
                 // UI 표시
                 const { x, y } = this.getScreenPosition(this.selectedObject);
                 this.showUIForSelectedObject(x, y);
+              }
+
+              if(this.objectHistory[this.selectedObject?.uuid]) {
+                // const lastSavedState = this.objectHistory[this.selectedObject.uuid].length > 0 ? this.objectHistory[this.selectedObject.uuid].length
+
+                console.log(this.objectHistory)
+                
+                const collisions = this.collidingObjects ? [...this.collidingObjects] : [];
+
+                // 현재 상태가 마지막으로 저장된 상태와 다른 경우에만 저장
+                const lastSavedState = this.objectHistory[this.selectedObject.uuid].length > 0 ? this.objectHistory[this.selectedObject.uuid][this.objectHistory[this.selectedObject.uuid].length - 1] : null;
+
+                // 선택된 객체와 마지막으로 저장된 객체를 비교
+                if (!lastSavedState || !lastSavedState.position.equals(this.selectedObject.position) || 
+                    !lastSavedState.quaternion.equals(this.selectedObject.quaternion)) {
+
+                    // 상태 객체를 저장 (위치, 회전, 충돌 정보 포함)
+                    const objectState = {
+                      position: this.selectedObject.position.clone(),
+                      quaternion: this.selectedObject.quaternion.clone(),
+                      collisions: collisions // 충돌된 객체들
+                    };
+
+                    // history에 상태 저장
+                    this.objectHistory[this.selectedObject.uuid].push(objectState);
+                    this.objectHistory[this.selectedObject.uuid].currentIndex++;
+                }
               }
         }
 
@@ -1123,19 +1144,27 @@ export default {
         }
 
         // this.gtlfLoader.load('/editor/chair1/old_wooden_chair.gltf', (gltf) => {
-        this.gtlfLoader.load('/editor/chair2/chair.gltf', (gltf) => {
+        // this.gtlfLoader.load('/editor/chair2/chair.gltf', (gltf) => {
+        this.gtlfLoader.load('/editor/scene (30).gltf', (gltf) => {
 
           gltf.scene.name = "singleGltf";
-          const object = gltf.scene;
-          object.scale.set(0.03, 0.03, 0.03);
+
+          //로드된 객체는 대부분 그룹화되어있어서 좀 그럼
+
+          const object = gltf.scene.children[0];
 
           this.scene.add(object);
 
           this.selObject = object;
 
+          this.selObject.userData.isDroppedObject = true;
+
           this.activeObjects.push(this.selObject);
 
-          this.selectObjectControl(object)
+          // const box = new THREE.BoxHelper(this.selObject, 0xffff00);
+          // this.scene.add(box);
+
+          this.selectObjectControl(this.selObject)
 
           // const { x, y } = this.getScreenPosition(this.selectedObject);
 
@@ -1349,6 +1378,10 @@ export default {
     }
   }, 
 
+  // confirmCancle() {
+  //   this.isConfirmVisible = false;
+  // },
+
   /**
    * @function selectObjectControl
    * @param obj Three.Mesh | THREE.Object3D | THREE.Group
@@ -1390,9 +1423,22 @@ export default {
    */
   selectObjectControl(obj) {
 
+
     if(!(obj instanceof THREE.Mesh || obj instanceof THREE.Object3D || obj instanceof THREE.Group)) return;
 
-    this.history = [];
+
+    const objectState = {
+      position: obj.position.clone(),
+      quaternion: obj.quaternion.clone(),
+      collisions: [], // 충돌된 객체들
+    };
+
+    if(!this.objectHistory[obj.uuid]) {
+      this.objectHistory[obj.uuid] = [objectState];
+      this.objectHistory[obj.uuid].currentIndex =0;
+    }
+
+    // console.log(this.objectHistory)
 
     // 다른 객체를 우선 저장
     if(this.selectedObject) {
@@ -1417,7 +1463,9 @@ export default {
 
     this.selectedObject = obj; // selObject는 우클릭으로 이벤트로 받아온 Three 객체
 
-    this.transformControls.attach(obj);
+
+    this.transformControls.attach(obj);      
+    
 
     this.contextMenu.isShow = false; // 마우스 우클릭 - 컨텍스트 메뉴 false
     this.isEditMode = true; 
@@ -1449,7 +1497,6 @@ export default {
             bevelEnabled: this.selectedMarkerObject.geometry.parameters.options.bevelEnabled
           }
 
-          console.log(this.selectedMarkerObject)
 
         }
       })
@@ -1459,7 +1506,22 @@ export default {
 
   },
 
+  isTopLevelObject(object) {
+    let currentObject = object;
 
+    while (currentObject.parent && currentObject.parent !== this.scene) {
+        currentObject = currentObject.parent;
+    }
+
+    // 최종 부모가 scene에 속해 있는지 확인
+    if (currentObject.parent === this.scene) {
+        console.log('이 객체는 Scene에 속한 최상위 부모입니다:', currentObject);
+        return true;  // 최상위 부모임
+    } else {
+        console.log('이 객체는 최상위 부모가 아닙니다.');
+        return false;  // 최상위 부모가 아님
+    }
+  },
 
   /**
    * @function handleCircleMenuClick
@@ -1481,15 +1543,7 @@ export default {
    */
   handleCircleMenuClick(menuItem) {
     switch(menuItem) {
-      case "save":
-
-        console.log(`position x : ${this.selectedObject.position.x}`);
-        console.log(`position y : ${this.selectedObject.position.y}`);
-        console.log(`position z : ${this.selectedObject.position.z}`);
-        console.log(`rotation x : ${this.selectedObject.rotation.x}`);
-        console.log(`rotation y : ${this.selectedObject.rotation.y}`);
-        console.log(`rotation z : ${this.selectedObject.rotation.z}`);
-
+      case "save": {
         this.activeObjects.push(this.selectedObject)
 
         if(this.selectedBoxHelper) {
@@ -1507,7 +1561,7 @@ export default {
 
         this.saveObject = this.selectedObject.clone(); //임시 테스트
 
-        this.selectedObject = null;
+        
         this.menuVisible = false;
         this.isEditMode = false;
 
@@ -1525,43 +1579,43 @@ export default {
         //   onlyVisible: true
         // };
 
-        this.gltfExporter.parse(this.saveObject, (gltf) => {
-
-          if(gltf instanceof ArrayBuffer) {
-            console.log(gltf)
-            this.save( new Blob( [ gltf ], { type: 'application/octet-stream' } ), "scene.glb" );
-          } else {
-            console.log(gltf)
-
-            const output = JSON.stringify( gltf, null, 2 );
-            // this.save( new Blob( [ output ], { type: 'text/plain' } ), "scene.gltf" );
-            this.save( new Blob( [ output ], { type: 'application/json' } ), "scene.gltf" );
-          }
 
 
-          // const formData = new FormData();
-          // formData.append('file', glbBlob, 'test_001');
+        // this.isSaveLoading = true;
 
-          // // API 서버에 POST 요청
-          // fetch('http://127.0.0.1:3000/files/upload', {
-          //     method: 'POST',
-          //     body: formData,
-          // })
-          // .then(response => response.json())
-          // .then(data => {
-          //     console.log('File upload successful:', data);
-          // })
-          // .catch(error => {
-          //     console.error('File upload failed:', error);
-          // });
 
-        }, (err) => {
-          console.log('Gltf/Glb 내보내기 실패', err);
-        }
-        ,this.options)
-        
+        //잠시 다운로드 중단
+        // let currentObject = this.selectedObject;
+
+        // 계속해서 부모를 추적하면서 `currentObject`가 Scene이 될 때까지 반복
+        // while (currentObject && currentObject.parent && !(currentObject instanceof THREE.Scene)) {
+        //   currentObject = currentObject.parent;
+        // }
+
+
+        // this.gltfExporter.parse(this.saveObject, (gltf) => {
+        // this.gltfExporter.parse(currentObject, (gltf) => {
+
+        //     if(gltf instanceof ArrayBuffer) {
+        //       this.save( new Blob( [ gltf ], { type: 'application/octet-stream' } ), "scene.glb" );
+        //     } else {
+        //       const output = JSON.stringify( gltf, null, 2 );
+        //       // this.save( new Blob( [ output ], { type: 'text/plain' } ), "scene.gltf" );
+        //       this.save( new Blob( [ output ], { type: 'application/json' } ), "scene.gltf" );
+        //     }
+
+        //     this.isSaveLoading = false;
+
+        //   }, (err) => {
+        //     console.log('Gltf/Glb 내보내기 실패', err);
+        //   }
+        //   ,this.options
+        // )
+
+        this.selectedObject = null;
 
         break;
+      }
       case "delete":
 
         //내 기능 + ContextMenu delete 이벤트 메서드 사용해도 됨 아직은 안함
@@ -1617,17 +1671,62 @@ export default {
         break;
       case "undo":
         console.log("undo");
-        if(this.history.length > 0) {
 
-          const lastState = this.history.pop();
+        if (this.objectHistory[this.selectedObject.uuid].length > 0) {
 
-          this.selectedObject.position.copy(lastState.position);
-          this.selectedObject.quaternion.copy(lastState.quaternion);
 
-          if(lastState.collisions.length > 0) {
+          // if(this.objectHistory[this.selectedObject.uuid].currentIndex === -1) {
+          //   this.objectHistory[this.selectedObject.uuid].currentIndex = this.objectHistory[this.selectedObject.uuid].length -1;
+          // }
+
+          console.log(this.objectHistory);
+
+          // Undo: 이전 상태로 이동
+          if (this.objectHistory[this.selectedObject.uuid].currentIndex > 0) {
+
+
+            console.log(this.objectHistory[this.selectedObject.uuid][this.objectHistory[this.selectedObject.uuid].currentIndex]);
+            const lastState = this.objectHistory[this.selectedObject.uuid][this.objectHistory[this.selectedObject.uuid].currentIndex - 1];
+
+            this.selectedObject.position.copy(lastState.position);
+            this.selectedObject.quaternion.copy(lastState.quaternion);
+
+            if (lastState.collisions.length > 0) {
+              this.isColliding = true;
+              this.handleCollision(lastState.collisions[0]);
+              this.visualizeSelectedObjectBoundingBox(this.selectedObject, 0xff0000);
+            } else {
+              this.isColliding = false;
+              this.clearCollisionMessage();
+              this.visualizeSelectedObjectBoundingBox(this.selectedObject, 0x00ff00);
+            }
+
+            if (this.selectedObject) {
+              const { x, y } = this.getScreenPosition(this.selectedObject);
+              this.showUIForSelectedObject(x, y);
+            }
+
+            // Undo 시에는 상태 인덱스를 하나 줄여서 이전 상태로
+            this.objectHistory[this.selectedObject.uuid].currentIndex--;
+          }
+        }
+
+        break;
+      case "redo": {
+
+        if (this.objectHistory[this.selectedObject.uuid] && this.objectHistory[this.selectedObject.uuid].currentIndex < this.objectHistory[this.selectedObject.uuid].length - 1) { //ㅇㅋ파악완료
+          // currentIndex를 하나 증가시켜 다음 상태로 이동
+          this.objectHistory[this.selectedObject.uuid].currentIndex++;
+
+          const nextState = this.objectHistory[this.selectedObject.uuid][this.objectHistory[this.selectedObject.uuid].currentIndex];
+
+          // 객체의 상태를 다음 상태로 업데이트
+          this.selectedObject.position.copy(nextState.position);
+          this.selectedObject.quaternion.copy(nextState.quaternion);
+
+          if (nextState.collisions.length > 0) {
             this.isColliding = true;
-            this.handleCollision(lastState.collisions[0]);
-
+            this.handleCollision(nextState.collisions[0]);
             this.visualizeSelectedObjectBoundingBox(this.selectedObject, 0xff0000);
           } else {
             this.isColliding = false;
@@ -1635,19 +1734,12 @@ export default {
             this.visualizeSelectedObjectBoundingBox(this.selectedObject, 0x00ff00);
           }
 
-
-          if (this.selectedObject) {
-            const { x, y } = this.getScreenPosition(this.selectedObject);
-            this.showUIForSelectedObject(x, y);
-          }
-          
-
-        } else {
-          alert("이전 상태가 없음")
+          const { x, y } = this.getScreenPosition(this.selectedObject);
+          this.showUIForSelectedObject(x, y);
         }
 
-        // this.menuVisible = false;
         break;
+      }
       case "rotate":
         this.transformControls.setMode('rotate')
         break;
@@ -1756,12 +1848,6 @@ export default {
     this.selObject.userData.connectId = textMesh.uuid;
 
 
-    // ✅ 5. Bounding Box 시각화 (디버깅용)
-    // const bboxHelper = new THREE.BoxHelper(textMesh);
-    // bboxHelper.material.color.set(0xff0000);
-    // this.scene.add(bboxHelper);
-    // bboxHelper.update();
-
     // ✅ 6. 카메라 위치 설정
     const distanceFromText = 3; // 텍스트에서 떨어진 거리
     const cameraPosition = {
@@ -1811,15 +1897,18 @@ export default {
     console.log('Scroll started');
     this.menuVisible = false;
 
-    const collisions = this.collidingObjects ? [...this.collidingObjects] : [];
+    //초기값
+    // const collisions = this.collidingObjects ? [...this.collidingObjects] : [];
 
-    const objectState = {
-      position: this.selectedObject.position.clone(),
-      quaternion: this.selectedObject.quaternion.clone(),
-      collisions: collisions // 충돌된 객체들
-    };
+    // const objectState = {
+    //   position: this.selectedObject.position.clone(),
+    //   quaternion: this.selectedObject.quaternion.clone(),
+    //   collisions: collisions // 충돌된 객체들
+    // };
 
-    this.history.push(objectState);
+    // this.objectHistory[this.selectedObject.uuid].push(objectState);
+    // console.log("scorll start");
+    // console.log(this.objectHistory)
 
     // 스크롤 시작 시 실행할 로직 추가
   },
@@ -1838,25 +1927,74 @@ export default {
 
       this.showUIForSelectedObject(x, y);
 
-      const collisions = this.collidingObjects ? [...this.collidingObjects] : [];
+      // const collisions = this.collidingObjects ? [...this.collidingObjects] : [];
+
+      if(this.objectHistory[this.selectedObject?.uuid]) {
+                // const lastSavedState = this.objectHistory[this.selectedObject.uuid].length > 0 ? this.objectHistory[this.selectedObject.uuid].length
+        
+        const collisions = this.collidingObjects ? [...this.collidingObjects] : [];
+
+        // 현재 상태가 마지막으로 저장된 상태와 다른 경우에만 저장
+        const lastSavedState = this.objectHistory[this.selectedObject.uuid].length > 0 ? this.objectHistory[this.selectedObject.uuid][this.objectHistory[this.selectedObject.uuid].length - 1] : null;
+
+        // 선택된 객체와 마지막으로 저장된 객체를 비교
+        if (!lastSavedState || !lastSavedState.position.equals(this.selectedObject.position) || 
+            !lastSavedState.quaternion.equals(this.selectedObject.quaternion)) {
+
+            // 상태 객체를 저장 (위치, 회전, 충돌 정보 포함)
+            const objectState = {
+              position: this.selectedObject.position.clone(),
+              quaternion: this.selectedObject.quaternion.clone(),
+              collisions: collisions // 충돌된 객체들
+            };
+
+            // history에 상태 저장
+            this.objectHistory[this.selectedObject.uuid].push(objectState);
+            this.objectHistory[this.selectedObject.uuid].currentIndex++;
+        }
+      }
+      // if(this.objectHistory[this.selectedObject.uuid]) {
+      //   // const lastSavedState = this.objectHistory[this.selectedObject.uuid].length > 0 ? this.objectHistory[this.selectedObject.uuid].length
+        
+      //   // 현재 상태가 마지막으로 저장된 상태와 다른 경우에만 저장
+      //   const lastSavedState = this.objectHistory[this.selectedObject.uuid].length > 0 ? this.objectHistory[this.selectedObject.uuid][this.objectHistory[this.selectedObject.uuid].length - 1] : null;
+
+      //   console.log("마지막 상태");
+      //   console.log(lastSavedState);
+
+      //   // 선택된 객체와 마지막으로 저장된 객체를 비교
+      //   if (!lastSavedState || !lastSavedState.position.equals(this.selectedObject.position) || 
+      //       !lastSavedState.quaternion.equals(this.selectedObject.quaternion)) {
+
+      //       // 상태 객체를 저장 (위치, 회전, 충돌 정보 포함)
+      //       const objectState = {
+      //         position: this.selectedObject.position.clone(),
+      //         quaternion: this.selectedObject.quaternion.clone(),
+      //         collisions: collisions // 충돌된 객체들
+      //       };
+
+      //       // history에 상태 저장
+      //       this.objectHistory[this.selectedObject.uuid].push(objectState);
+      //   }
+      // }
 
       // 현재 상태가 마지막으로 저장된 상태와 다른 경우에만 저장
-      const lastSavedState = this.history.length > 0 ? this.history[this.history.length - 1] : null;
+      // const lastSavedState = this.history.length > 0 ? this.history[this.history.length - 1] : null;
 
       // 선택된 객체와 마지막으로 저장된 객체를 비교
-      if (!lastSavedState || !lastSavedState.position.equals(this.selectedObject.position) || 
-          !lastSavedState.quaternion.equals(this.selectedObject.quaternion)) {
+      // if (!lastSavedState || !lastSavedState.position.equals(this.selectedObject.position) || 
+      //     !lastSavedState.quaternion.equals(this.selectedObject.quaternion)) {
 
-          // 상태 객체를 저장 (위치, 회전, 충돌 정보 포함)
-          const objectState = {
-            position: this.selectedObject.position.clone(),
-            quaternion: this.selectedObject.quaternion.clone(),
-            collisions: collisions // 충돌된 객체들
-          };
+      //     // 상태 객체를 저장 (위치, 회전, 충돌 정보 포함)
+      //     const objectState = {
+      //       position: this.selectedObject.position.clone(),
+      //       quaternion: this.selectedObject.quaternion.clone(),
+      //       collisions: collisions // 충돌된 객체들
+      //     };
 
-          // history에 상태 저장
-          this.history.push(objectState);
-      }
+      //     // history에 상태 저장
+      //     this.history.push(objectState);
+      // }
 
     }
     // 스크롤 끝났을 때 실행할 로직 추가
@@ -1920,7 +2058,8 @@ export default {
    * 예로 에디터 Scene에서 TransformControls조작된 수치가 에디터 툴에 반영되지 않아짐
    */
   /* eslint-disable no-unused-vars */
-  handleEditorObjectUpdate(_) { 
+  handleEditorObjectUpdate(_) {     
+
     const collidingObject = this.checkCollision(this.selectedObject, this.activeObjects);
 
     if (collidingObject) {
@@ -1931,8 +2070,6 @@ export default {
     }
   },
   /* eslint-disable no-unused-vars */
-
-
 
   /**
    * @function createGUI 현재는 커스터마이징해서 안쓰려고함
@@ -2173,6 +2310,8 @@ export default {
             this.gltfUrl,
             (gltf) => {
               // window.VIEWER.json = gltf;
+              
+              console.log(gltf.scene);
 
               const scene = gltf.scene || gltf.scenes[0];
               const clips = gltf.animations || [];
@@ -5474,7 +5613,8 @@ export default {
       // Timer를 시작
       this.contextMenu.timer = setTimeout(() => {
         this.contextMenu.isShow = false;
-      }, this.contextMenu.timeout);
+      // }, this.contextMenu.timeout);
+      }, 50000);
     },
 
     // Context Manu를 화면에서 숨김
@@ -5650,12 +5790,14 @@ export default {
             markObject.mObject = new THREE.Mesh(textGeometry, textMaterial);
             
 
-            // 텍스트를 표시할 위치
-            markObject.mObject.position.set(
-              mText.position.x,
-              mText.position.y,
-              mText.position.z
-            );
+            // 텍스트를 표시할 위치 - 에러나서 우선 처리함 -> mText에 position값이 없음
+            if(mText.position) {
+              markObject.mObject.position.set(
+                mText.position.x,
+                mText.position.y,
+                mText.position.z
+              );
+            }
 
             // Text를 회전을 할 경우 회전이 필요할 경우
             if (mText.rotation) {
@@ -6973,6 +7115,12 @@ FullScreen이 아닐 경우 특정 사이즈를 지정해야 정상 사용 가�
     border: 1px solid #555;
     margin: 6px 0; /* Reduced margin */
 }
+
+
+
+
+/** confirm */
+
 
 
 
